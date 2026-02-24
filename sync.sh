@@ -130,5 +130,6 @@ else
         echo "⚠️ .git/hooks directory not found. Are you in the root of a git repository?"
     fi
 fi
+rm -f .cursor/pre-commit-logic.sh
 
 echo "🚀 Sync complete. AgentCore Operating System is online."
