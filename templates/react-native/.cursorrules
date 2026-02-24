@@ -100,5 +100,5 @@ If I ask for these, **STOP** and suggest the modern replacement:
 - **Implementation:** `i18n.t("products.create")`.
 
 # DOCUMENTATION
-- When changing core dependencies, project layout, DB/migration approach, root providers/theming, state or navigation patterns, or key config (app.json, babel.config.js, tsconfig.json), update any replication or blueprint docs and keep version numbers in sync with actual config.
+- When changing core dependencies, project layout, DB/migration approach, root providers/theming, state or navigation patterns, or key config (app.json, babel.config.js, tsconfig.json), update `SYSTEM_ARCHITECTURE.md` and keep version numbers in sync with actual config.
 - **Code review:** When reviewing PRs that touch stack, layout, or config, consider whether docs need an update (see `docs/code_review_prompt.md`).

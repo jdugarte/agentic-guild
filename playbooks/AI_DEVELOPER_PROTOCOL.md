@@ -27,7 +27,7 @@
 
 **Goal:** Ensure docs match the code.
 
-1.  **Spec Audit:** Compare `docs/SPEC.md` against the core data layer (e.g., `app/models/`, `db/schema.ts`, `prisma/schema.prisma`). Are there models missing from the Spec? Are there relationships described in Spec that don't exist?
+1.  **Spec Audit:** Compare `docs/core/SPEC.md` against the core data layer (e.g., `app/models/`, `db/schema.ts`, `prisma/schema.prisma`). Are there models missing from the Spec? Are there relationships described in Spec that don't exist?
 2.  **UI Audit:** Compare UI docs (if any) against the frontend components directory (e.g., `app/components/`, `src/views/`).
 
 ## Artifact Strategy (The "Wisdom" of Execution)
@@ -51,7 +51,7 @@
 **Goal:** Execute the proposal from Phase 2 and optimize document storage.
 
 1.  **Organize `docs/` Hierarchy:**
-    - Group documents into logical subdirectories (e.g., `core/`, `features/`, `ai/`, `audit/`) so AI agents can be targeted to specific folders (e.g., `@docs/features/`) without polluting their context window.
+    - Group documents into logical subdirectories (e.g., `core/`, `features/`, `ai/`, `audit/`) so AI agents can be targeted to specific folders without polluting their context window.
 2.  **Merge Split Brains:**
     - Read the source file (e.g., `obsolete_auth.md`).
     - Append its relevant content to the target file (e.g., `AUTH_SPEC.md`).
@@ -61,20 +61,19 @@
 
 ## Phase 6: AI Agent & Workflow Optimization
 
-**Goal:** Ensure AI assistants operate seamlessly within the project's specific tech stack, follow interactive, safe workflows, and maintain documentation hygiene.
+**Goal:** Ensure AI assistants operate as strict state machines with persistent memory and adherence to the AgentCore architecture.
 
-1.  **Agent SOP Refactor:**
-    - Consolidate AI rules into `.cursorrules` to act as an **IF/THEN routing table**.
+1.  **Agent OS Initialization:**
+    - Ensure `.agentcore/` directory exists with `current_state.md`, `blocker_log.md`, and `pending_refactors.md`.
+    - Consolidate AI rules into `.cursorrules` to act as an IF/THEN routing table, and ensure it contains the `<agentcore_operating_system>` header.
     - **CRITICAL RULE:** All agents and instructions must explicitly forbid auto-committing or auto-pushing code. At most, suggest a commit message.
-    - Do not duplicate standard formatting rules. Keep `.cursorrules` as the single source of truth for both standards and workflow routing.
-    - Delete legacy directories like `.agent/` so all tools share a single source of truth and avoid "Split Brain" AI instructions.
-2.  **Skill Refinement (Local & Async Loops):**
-    - Update universal workflow skills (e.g., `start-feature`, `finish-branch`, `status-check`) to enforce interactive pauses.
-    - **Start Feature:** Ensure the AI forces a Q&A discovery phase, drafts a hierarchical `implementation_plan.md`, and loops through a strict TDD process step-by-step.
-    - **Finish Branch:** Ensure the AI handles async loops (like waiting for remote bot reviews on GitHub) by pausing and waiting for the user to provide feedback in loops.
-    - **Status Check:** Ensure the skill can rehydrate context by reading the `implementation_plan.md`, codebase, and test suite to pinpoint exactly _Who_ is blocking progress.
-    - **Harvest Rules:** Ensure rule extraction pauses for explicit user approval before writing to `.cursorrules`.
+    - Delete legacy directories like `.agent/` or `.cursor/rules/` so all tools share a single source of truth.
+2.  **Skill Refinement (XML State Machines):**
+    - Update universal workflow skills (e.g., `start-task`, `finish-branch`, `status-check`) to ensure they use strict `<agentcore_skill>` XML formatting.
+    - **Start Task:** Ensure the AI forces a classification phase, drafts a hierarchical `implementation_plan.md`, checks `SYSTEM_ARCHITECTURE.md`, and loops through strict TDD.
+    - **Finish Branch:** Ensure the AI handles async loops (like waiting for remote bots) by pausing and yielding control.
+    - **Status Check:** Ensure the skill can rehydrate context by reading `.agentcore/current_state.md` and the `implementation_plan.md` to pinpoint blockers.
 3.  **Playbook Documentation:**
-    - Ensure `docs/ai/AI_WORKFLOW_PLAYBOOK.md` exists to document the exact purpose and triggers for all Custom Skills in the project, providing a clear reference manual for current and future developers.
+    - Ensure `docs/ai/AI_WORKFLOW_PLAYBOOK.md` exists to document the exact purpose and triggers for all Custom Skills and the Memory architecture.
 4.  **Prevent Future "Drift" via PR Templates:**
-    - Add required checkboxes to `.github/PULL_REQUEST_TEMPLATE.md` forcing developers to attest they have updated `SPEC.md` (if schema changes) or `REPLICATION_BLUEPRINT.md` (if the stack changes).
+    - Add required checkboxes to `.github/PULL_REQUEST_TEMPLATE.md` forcing developers to attest they have updated `SPEC.md` (if schema changes) or `SYSTEM_ARCHITECTURE.md` (if the stack changes).

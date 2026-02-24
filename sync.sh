@@ -1,70 +1,114 @@
 #!/bin/bash
 # sync.sh
-# Quickly downloads the universal AI Skills and Playbooks from the AgentCore Global Brain.
+# Quickly downloads the universal AI Skills, Memory Scaffold, and Playbooks from the AgentCore Global Brain.
 # Usage: ./sync.sh
 
 REPO_URL="https://raw.githubusercontent.com/jdugarte/AgentCore/main"
 
-echo "🧠 Initializing Local Agent Brain..."
+echo "🧠 Initializing AgentCore Operating System..."
 
-# Create necessary directories
-mkdir -p .cursor/skills/{start-feature,finish-branch,harvest-rules,status-check,code-review}
-mkdir -p docs/{ai,core,ui,features,audit,guides}
+# 1. Create necessary directories
+echo "📁 Building directory structure..."
+mkdir -p .cursor/skills/{start-task,finish-branch,harvest-rules,status-check,code-review,audit-compliance,sync-schema-docs,pr-description-clipboard}
+mkdir -p .agentcore/active_sessions
+mkdir -p docs/{ai,core,features,audit,guides}
 mkdir -p docs/core/ADRs
 mkdir -p .github
 mkdir -p docs/.agent-core-templates
 
-# Download Playbooks and expected structure
-echo "📥 Syncing Playbooks..."
+# 2. Configure Gitignore for AI Memory
+GITIGNORE_FILE=".gitignore"
+if [ -f "$GITIGNORE_FILE" ]; then
+    if ! grep -q ".agentcore/\*" "$GITIGNORE_FILE"; then
+        echo "📝 Securing .agentcore/ memory folder in .gitignore..."
+        echo "" >> "$GITIGNORE_FILE"
+        echo "# AgentCore Transient Memory" >> "$GITIGNORE_FILE"
+        echo ".agentcore/*" >> "$GITIGNORE_FILE"
+        echo "!.agentcore/.gitkeep" >> "$GITIGNORE_FILE"
+    fi
+else
+    echo "📝 Creating .gitignore to secure .agentcore/ memory..."
+    echo "# AgentCore Transient Memory" > "$GITIGNORE_FILE"
+    echo ".agentcore/*" >> "$GITIGNORE_FILE"
+    echo "!.agentcore/.gitkeep" >> "$GITIGNORE_FILE"
+fi
+
+# Ensure .gitkeep exists so the folder structure survives git
+touch .agentcore/.gitkeep
+touch .agentcore/active_sessions/.gitkeep
+
+# 3. Download Playbooks
+echo "📥 Syncing Playbooks & Protocols..."
 curl -s "$REPO_URL/playbooks/AI_DEVELOPER_PROTOCOL.md" > docs/ai/AI_DEVELOPER_PROTOCOL.md
 curl -s "$REPO_URL/playbooks/AI_WORKFLOW_PLAYBOOK.md" > docs/ai/AI_WORKFLOW_PLAYBOOK.md
 curl -s "$REPO_URL/playbooks/EXPECTED_PROJECT_STRUCTURE.md" > docs/ai/EXPECTED_PROJECT_STRUCTURE.md
-
-# Download ADR template (so start-feature can draft ADRs)
 curl -s "$REPO_URL/templates/adr/0000-ADR-TEMPLATE.md" > docs/core/ADRs/0000-ADR-TEMPLATE.md
 
-# Download Universal Skills
-echo "📥 Syncing Master Skills..."
-curl -s "$REPO_URL/skills/start-feature/SKILL.md" > .cursor/skills/start-feature/SKILL.md
+# 4. Download Universal XML Skills
+echo "📥 Syncing Master XML Skills..."
+curl -s "$REPO_URL/skills/start-task/SKILL.md" > .cursor/skills/start-task/SKILL.md
 curl -s "$REPO_URL/skills/finish-branch/SKILL.md" > .cursor/skills/finish-branch/SKILL.md
 curl -s "$REPO_URL/skills/status-check/SKILL.md" > .cursor/skills/status-check/SKILL.md
 curl -s "$REPO_URL/skills/harvest-rules/SKILL.md" > .cursor/skills/harvest-rules/SKILL.md
 curl -s "$REPO_URL/skills/code-review/SKILL.md" > .cursor/skills/code-review/SKILL.md
 curl -s "$REPO_URL/skills/audit-compliance/SKILL.md" > .cursor/skills/audit-compliance/SKILL.md
+curl -s "$REPO_URL/skills/sync-schema-docs/SKILL.md" > .cursor/skills/sync-schema-docs/SKILL.md
+curl -s "$REPO_URL/skills/pr-description-clipboard/SKILL.md" > .cursor/skills/pr-description-clipboard/SKILL.md
 
-# Download GitHub PR Template
-echo "📥 Syncing GitHub Templates..."
+# 5. Download Templates (To temporary holding folder)
+echo "📥 Syncing Governance Templates..."
 curl -s "$REPO_URL/templates/pr/PULL_REQUEST_TEMPLATE.md" > .github/PULL_REQUEST_TEMPLATE.md
-
-# Download HRE Compliance Standards
-echo "📥 Syncing HRE Standards..."
-mkdir -p docs/ai/hre
-curl -s "$REPO_URL/templates/hre/jpl_standards.md" > docs/ai/hre/jpl_standards.md
-
-# Download Documentation Templates (as starting points)
-echo "📥 Syncing Documentation Templates..."
 curl -s "$REPO_URL/templates/core/SPEC.md" > docs/.agent-core-templates/SPEC.md
-curl -s "$REPO_URL/templates/ui/ui_roadmap_and_inventory.md" > docs/.agent-core-templates/ui_roadmap_and_inventory.md
+curl -s "$REPO_URL/templates/core/SYSTEM_ARCHITECTURE.md" > docs/.agent-core-templates/SYSTEM_ARCHITECTURE.md
+curl -s "$REPO_URL/templates/core/deterministic_coding_standards.md" > docs/.agent-core-templates/deterministic_coding_standards.md
+curl -s "$REPO_URL/templates/core/TESTING_STRATEGY_MATRIX.md" > docs/.agent-core-templates/TESTING_STRATEGY_MATRIX.md
+curl -s "$REPO_URL/templates/core/DATA_FLOW_MAP.md" > docs/.agent-core-templates/DATA_FLOW_MAP.md
+curl -s "$REPO_URL/templates/core/AGENT_CORE_RULES.md" > docs/.agent-core-templates/AGENT_CORE_RULES.md
 
-# Initialize Core Docs if missing and cleanup
-if [ ! -f "docs/core/SPEC.md" ]; then
-    echo "📄 Initializing docs/core/SPEC.md from template..."
-    cp docs/.agent-core-templates/SPEC.md docs/core/SPEC.md
-    rm docs/.agent-core-templates/SPEC.md
+# Memory Scaffold Templates
+curl -s "$REPO_URL/templates/core/memory_scaffold/current_state.md" > docs/.agent-core-templates/current_state.md
+curl -s "$REPO_URL/templates/core/memory_scaffold/blocker_log.md" > docs/.agent-core-templates/blocker_log.md
+curl -s "$REPO_URL/templates/core/memory_scaffold/pending_refactors.md" > docs/.agent-core-templates/pending_refactors.md
+curl -s "$REPO_URL/templates/core/memory_scaffold/task_template.md" > docs/.agent-core-templates/task_template.md
+
+# 6. Safe Initialization (Only write if file doesn't exist to protect local context)
+echo "🏗️ Initializing Missing Governance & Memory Files..."
+
+declare -a core_files=("SPEC.md" "SYSTEM_ARCHITECTURE.md" "deterministic_coding_standards.md" "TESTING_STRATEGY_MATRIX.md" "DATA_FLOW_MAP.md")
+for file in "${core_files[@]}"; do
+    if [ ! -f "docs/core/$file" ]; then
+        echo "   📄 Initializing docs/core/$file..."
+        cp "docs/.agent-core-templates/$file" "docs/core/$file"
+    fi
+done
+
+declare -a memory_files=("current_state.md" "blocker_log.md" "pending_refactors.md")
+for file in "${memory_files[@]}"; do
+    if [ ! -f ".agentcore/$file" ]; then
+        echo "   🧠 Initializing .agentcore/$file..."
+        cp "docs/.agent-core-templates/$file" ".agentcore/$file"
+    fi
+done
+
+if [ ! -f ".agentcore/active_sessions/task_template.md" ]; then
+    cp docs/.agent-core-templates/task_template.md .agentcore/active_sessions/task_template.md
 fi
 
-if [ ! -f "docs/ui/ui_roadmap_and_inventory.md" ]; then
-    echo "📄 Initializing docs/ui/ui_roadmap_and_inventory.md from template..."
-    cp docs/.agent-core-templates/ui_roadmap_and_inventory.md docs/ui/ui_roadmap_and_inventory.md
-    rm docs/.agent-core-templates/ui_roadmap_and_inventory.md
+# 7. Inject AgentCore OS Rules into .cursorrules
+if [ -f "docs/.agent-core-templates/AGENT_CORE_RULES.md" ]; then
+    if [ ! -f ".cursorrules" ]; then
+        echo "   ⚙️ Creating .cursorrules with AgentCore OS..."
+        cp docs/.agent-core-templates/AGENT_CORE_RULES.md .cursorrules
+    elif ! grep -q "<agentcore_operating_system>" ".cursorrules"; then
+        echo "   ⚙️ Prepending AgentCore OS to existing .cursorrules..."
+        cat docs/.agent-core-templates/AGENT_CORE_RULES.md .cursorrules > .cursorrules.tmp && mv .cursorrules.tmp .cursorrules
+    fi
 fi
 
-# Cleanup template directory if empty
-if [ -z "$(ls -A docs/.agent-core-templates)" ]; then
-    rmdir docs/.agent-core-templates
-fi
+# Cleanup
+rm -rf docs/.agent-core-templates
 
-# Smart Git Hook Installation
+# 8. Git Hook Installation
 echo "⚓ Installing Git Hooks..."
 curl -s "$REPO_URL/templates/git-hooks/pre-commit-logic.sh" > .cursor/pre-commit-logic.sh
 
@@ -77,10 +121,14 @@ if [ -f "$HOOK_FILE" ]; then
         echo "✅ Safety check already present in pre-commit hook."
     fi
 else
-    echo "🆕 Creating new pre-commit hook..."
-    echo "#!/bin/bash" > "$HOOK_FILE"
-    cat .cursor/pre-commit-logic.sh >> "$HOOK_FILE"
-    chmod +x "$HOOK_FILE"
+    if [ -d ".git/hooks" ]; then
+        echo "🆕 Creating new pre-commit hook..."
+        echo "#!/bin/bash" > "$HOOK_FILE"
+        cat .cursor/pre-commit-logic.sh >> "$HOOK_FILE"
+        chmod +x "$HOOK_FILE"
+    else
+        echo "⚠️ .git/hooks directory not found. Are you in the root of a git repository?"
+    fi
 fi
 
-echo "✅ Sync complete. Local AI workflows are up-to-date with AgentCore."
+echo "🚀 Sync complete. AgentCore Operating System is online."

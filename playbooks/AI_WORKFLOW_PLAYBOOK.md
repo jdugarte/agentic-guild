@@ -3,7 +3,7 @@ Date: 2026-02-20
 
 ## Core AI Commands & Skills
 
-### 1. Start Feature
+### 1. Start Task
 **Goal**: Safely begin working on a new feature, enforcing design and discovery before coding.
 **Workflow Steps**:
 1. **Discovery Q&A**: Interactively gather the context of the feature from the user.

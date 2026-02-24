@@ -31,14 +31,6 @@ The Twelve-Factor methodology ensures applications are built for portability, sc
 3. VALIDATE that Kamal deployment configurations (`deploy.yml`) pull secrets securely from the environment, not from committed files.
 </twelve_factor_rules>
 
-
-```
-
-
-```
-
-
-
 ---
 
 ## 2. Design by Contract (DbC) / Defensive Programming
@@ -60,10 +52,6 @@ When generating a Service Object or an API endpoint:
 1. Define PRECONDITIONS explicitly at the top of the method using Ruby `raise ArgumentError` or early returns for invalid TypeScript payloads.
 2. Define POSTCONDITIONS before the final return statement to verify the mutation succeeded.
 3. Do not assume the database or external API will sanitize the data for you. Fail fast.
-
-```
-
-
 
 ---
 
@@ -106,10 +94,6 @@ Systems fail in unpredictable ways: mobile networks drop, Solid Cable WebSockets
   3. Ensure Mobile TypeScript clients implement Optimistic UI updates and cache state locally if the Rails backend is unreachable.
 </chaos_engineering_mandate>
 
-```
-
-
-
 ---
 
 ## 5. Formal Methods & TLA+ (Mathematical Correctness)
@@ -128,13 +112,3 @@ For highly complex, distributed state machines (like resolving data conflicts wh
 1. Write a high-level PlusCal specification of your mobile-to-backend sync logic in `docs/core/sync_model.tla`.
 2. Use a TLA+ checker locally to verify it.
 3. **Prompt Definition:** *"Read `sync_model.tla`. This state machine has been mathematically verified. Generate the Rails Controller and TypeScript Mobile Service that strictly implement this exact state machine. Do not introduce any intermediate states not defined in the TLA+ file."*
-
-
-
----
-
-## 🚀 Next Step
-
-To make this actionable in your workspace, we should build the first physical AgentCore Skill file for one of these disciplines.
-
-**Would you like me to draft the exact `.cursor/skills/audit-twelve-factor.md` file, or would you prefer to build the prompt template that forces the AI to apply Design by Contract (DbC) to your Rails Service Objects?**

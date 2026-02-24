@@ -19,7 +19,7 @@ The `docs/` folder is authoritative. You must consult these files before impleme
 4. **Security:** `docs/secrets_management.md` (Env vars, Credentials).
 5. **i18n:** `docs/i18n_localization_guide.md` (Strict localization rules).
 6. **Architecture:** `docs/architectural_patterns_in_ruby_on_rails.md` (Service Objects vs Concerns).
-7. **Documentation maintenance:** `docs/documentation_maintenance.md` (when to update docs, including `.cursorrules` / `.agent/rules/rules.md` sync).
+7. **Documentation maintenance:** `docs/documentation_maintenance.md` (when to update docs).
 8. **Legacy naming:** When you rename or add a mapping between `/old` and `/game_scores`, update **`docs/legacy_naming_map.md`**. Do not reintroduce legacy names in the new app; CI runs `script/check_legacy_names` to catch them.
 9. **JavaScript testing:** `docs/javascript_testing.md` (Vitest, coverage, running and writing controller specs).
 10. **Changelog:** When your change is user-facing, a fix, or a notable dependency/config change, update **CHANGELOG.md** (entry under `[Unreleased]`). See CHANGELOG.md section "When to update this file."
@@ -80,7 +80,7 @@ The `docs/` folder is authoritative. You must consult these files before impleme
 # DOCUMENTATION & CHANGELOG
 - **CHANGELOG.md:** When a PR adds a user-facing change, fix, or notable dependency/config change, update **CHANGELOG.md** (add an entry under `[Unreleased]`). See CHANGELOG.md section "When to update this file."
 - **Living docs:** When implementing features, update the relevant `docs/` file. When shipping a release, move `[Unreleased]` entries in CHANGELOG into a new version section.
-- **Agent rules:** When you change this file (`.cursorrules`) or **`.agent/rules/rules.md`**, update the other so Cursor and Antigravity stay in sync.
+- **Agent rules:** When you change this file (`.cursorrules`), ensure any new patterns or workflows are extracted to the Global Brain via the `harvest-rules` skill.
 
 # UNIVERSAL BEHAVIOR
 - **No Yapping:** Output code immediately.

@@ -40,11 +40,10 @@
 ## 🧠 Anti-Drift Checklist
 To prevent "drift" between the codebase and our AI context, please attest that you have updated the authoritative documentation:
 
-- [ ] **Schema/Model**: I have updated `docs/core/SPEC.md` for any database or data structure changes.
-- [ ] **UI Inventory**: I have updated `docs/ui/ui_roadmap_and_inventory.md` for new components or patterns.
-- [ ] **Architecture (ADR)**: I have created/updated ADRs in `docs/adr/` if new paradigms were introduced.
-- [ ] **AI Rules**: I have updated `.cursorrules` or `docs/ai/` if developer protocols changed.
-- [ ] **Blueprint**: I have updated `docs/core/REPLICATION_BLUEPRINT.md` if the project structure shifted.
+- [ ] **Schema/Model**: I have updated `docs/core/SPEC.md` and ran `sync-schema-docs` for any database changes.
+- [ ] **Architecture (ADR)**: I have created/updated ADRs in `docs/core/ADRs/` if new paradigms were introduced.
+- [ ] **AI Rules**: I have updated `.cursorrules` or approved a `harvest-rules` run if developer protocols changed.
+- [ ] **Boundaries**: I have updated `docs/core/SYSTEM_ARCHITECTURE.md` if the tech stack, libraries, or core patterns shifted.
 
 ## 🔍 Reviewer Focus Areas
 [Are there specific areas where you want the reviewer to pay extra attention? Complex logic, high-risk changes, etc.]

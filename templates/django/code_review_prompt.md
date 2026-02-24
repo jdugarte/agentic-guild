@@ -16,11 +16,11 @@ This is a **strict self-review** of changes for a Django project. Your goal is t
 - **Service Layer:** Flag any business logic (calculations, external API calls, multi-model updates) found in `views.py` or `models.py`. Demand extraction to a PORO in `project_a/services/`.
 - **Selector Layer:** Flag complex `.annotate()`, `.aggregate()`, or deeply nested `.filter()` chains in views. Demand extraction to `project_a/selectors/`.
 - **Fat Models:** Flag any custom model methods that do more than return internal state. Logic that coordinates multiple models belongs in a Service.
-- **Signals:** Flag the use of Django Signals. [cite_start]Recommend explicit calls within a Service Object instead to maintain traceability[cite: 2, 3].
+- **Signals:** Flag the use of Django Signals. Recommend explicit calls within a Service Object instead to maintain traceability[cite: 2, 3].
 
 **Function Size & Readability**
-- [cite_start]**Method Length:** Strictly enforce a **5-line limit** for most methods; flag anything over 15 lines[cite: 33, 35].
-- [cite_start]**Guard Clauses:** Demand `if not condition: return` instead of nested `if` blocks[cite: 31].
+- **Method Length:** Strictly enforce a **5-line limit** for most methods; flag anything over 15 lines[cite: 33, 35].
+- **Guard Clauses:** Demand `if not condition: return` instead of nested `if` blocks[cite: 31].
 
 ---
 
@@ -29,7 +29,7 @@ This is a **strict self-review** of changes for a Django project. Your goal is t
 **Type Hygiene**
 - **Missing Hints:** Flag any function or method missing type hints for arguments or return values.
 - **The `Any` Ban:** **STRICTLY** flag usage of `Any`. Demand specific types or `Protocols`.
-- **Explicit Imports:** Flag `from module import *`. [cite_start]Demand explicit naming[cite: 3].
+- **Explicit Imports:** Flag `from module import *`. Demand explicit naming[cite: 3].
 
 **Django ORM Safety**
 - **N+1 Queries:** Check for missing `.select_related()` or `.prefetch_related()` when accessing foreign keys in loops or serializers.
@@ -41,7 +41,7 @@ This is a **strict self-review** of changes for a Django project. Your goal is t
 ### 3. UI & Templates (Django Way)
 
 - **Logic in Templates:** Flag any complex Python calls or business logic inside `.html` templates. Templates should only handle display logic.
-- [cite_start]**Hardcoded Strings:** Flag any user-facing text not wrapped in `gettext`, `_()`, or `{% trans %}`[cite: 45, 120].
+- **Hardcoded Strings:** Flag any user-facing text not wrapped in `gettext`, `_()`, or `{% trans %}`[cite: 45, 120].
 - **CSRF Safety:** Ensure all POST forms include `{% csrf_token %}`.
 
 ---
@@ -49,8 +49,8 @@ This is a **strict self-review** of changes for a Django project. Your goal is t
 ### 4. Testing & Documentation
 
 - **Test Coverage:** If logic was added/changed, ensure a corresponding test exists in `tests/`.
-- [cite_start]**Living Documentation:** If a feature changes business rules or data structures, flag if `docs/core/SPEC.md` was not updated[cite: 17, 47].
-- [cite_start]**Changelog:** Ensure `CHANGELOG.md` has an entry under `[Unreleased]` for user-facing or config changes[cite: 15, 46].
+- **Living Documentation:** If a feature changes business rules or data structures, flag if `docs/core/SPEC.md` was not updated[cite: 17, 47].
+- **Changelog:** Ensure `CHANGELOG.md` has an entry under `[Unreleased]` for user-facing or config changes[cite: 15, 46].
 
 ### 5. HRE & Resiliency (Mission Critical)
 
@@ -67,7 +67,7 @@ This is a **strict self-review** of changes for a Django project. Your goal is t
 
 Organize feedback using these categories:
 
-1. **🛑 MUST FIX (Crash Risk / Type Safety):** `Any` types, missing type hints, N+1 queries, hardcoded strings.
+1. **🛑 MUST FIX (Crash Risk / Type Safety):** HRE violations, untraced code, `any` types, missing type hints, N+1 queries, hardcoded strings.
 2. **⚠️ STRONGLY RECOMMENDED (Architecture):** Logic in views/models, missing Service/Selector extraction, nested if-statements.
 3. **💡 NICE TO IMPROVE:** Naming clarity, docstring improvements, minor refactors.
 4. **📄 Docs/Config:** Updates needed for `SPEC.md`, `CHANGELOG.md`, or environment variables.

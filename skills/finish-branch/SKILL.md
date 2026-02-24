@@ -1,73 +1,62 @@
----
-name: finish-branch
-description: Handles the completion of a branch, PR creation, and CI/Bot feedback loops. Use when the user asks to "finish this branch", "open a PR for this", or complete their work on a feature.
----
+<agentcore_skill>
+  <skill_definition>
+    <name>finish-branch</name>
+    <description>Handles the completion of a branch, PR creation, and CI/Bot feedback loops.</description>
+  </skill_definition>
 
-# Finish Branch Skill
+  <state_machine_directives>
+    1. NEVER execute more than ONE <step> per response.
+    2. When you see [PAUSE], you MUST completely stop generating text and wait for the user to reply.
+  </state_machine_directives>
 
-## Required files / Pre-flight
+  <pre_flight>
+    <directive>Before executing the workflow, verify the necessary context exists.</directive>
+    <check>Verify `docs/core/SYSTEM_ARCHITECTURE.md` and `docs/core/SPEC.md` exist.</check>
+    <action>If they are missing, abort the skill and point the user to `docs/ai/EXPECTED_PROJECT_STRUCTURE.md`. Do NOT hallucinate their contents.</action>
+  </pre_flight>
 
-Before running this skill, check that these exist:
+  <workflow>
+    <phase id="1" name="Interactive Local Review">
+      <step id="1.1">
+        <action>Trigger the `code-review` skill. Wait for its completion.</action>
+        <yield>[PAUSE - AWAIT CODE REVIEW COMPLETION]</yield>
+      </step>
+    </phase>
 
-- `docs/ai/code_review_prompt.md` (for Phase 1 code review)
-- `docs/core/SPEC.md` (for Phase 4 traceability audit)
-- `templates/hre/jpl_standards.md` (Compliance reference)
+    <phase id="2" name="Compliance & Traceability Audit">
+      <step id="2.1">
+        <action>
+          Read `docs/core/deterministic_coding_standards.md`.
+          Analyze the branch to ensure no cyclomatic complexity or function length violations occurred.
+          Scan all new tests for `[REQ-ID]` tags referencing `docs/core/SPEC.md`.
+        </action>
+        <yield>[PAUSE - REPORT FINDINGS. AWAIT COMMAND TO FIX OR PROCEED]</yield>
+      </step>
+    </phase>
 
-**If any required file is missing:** Tell the user and point them to the Expected Project Structure document.
+    <phase id="3" name="Remote Async Review">
+      <step id="3.1">
+        <action>
+          Instruct the user to commit, push, and wait for CI/BugBot feedback.
+          Update `.agentcore/current_state.md` to indicate waiting status.
+        </action>
+        <yield>[PAUSE - STAY IN STEP 3.1 UNTIL USER PASTES BUGBOT FEEDBACK OR SAYS "CI IS GREEN"]</yield>
+      </step>
+    </phase>
 
-## Purpose
-This skill orchestrates the aerospace-grade verification pipeline. It handles local checks, enforces compliance with JPL standards, and performs a final traceability audit before PR creation.
-
-## Execution Rule (Critical)
-
-**Always start with Phase 1, Step 1.** Do not skip to Phase 2 or Phase 3 unless the user explicitly says to skip the code review. Every time the user invokes "finish this branch", perform the **Interactive Local Review** first.
-
-## Workflow
-
-### PHASE 1: Local Code Review & Compliance
-1.  **Interactive Local Review**
-    *   **Action:** Trigger `code-review` skill using `docs/ai/code_review_prompt.md`.
-    *   **Output:** List the findings clearly for the user. 
-    *   **Instruction:** Ask the user WHICH specific points they would like you to fix.
-
-2.  **Compliance Audit (JPL Standards)**
-    *   **Action:** Trigger `audit-compliance` skill.
-    *   **Checks:** Cyclomatic complexity (<10), function length (<60 lines), and assertion density (Pre/Post conditions).
-    *   **Output:** If violations occur, the AI MUST propose refactors to achieve compliance.
-
-3.  **Implementation & Pre-Flight Checks**
-    *   **Action:** Implement requested fixes/refactors.
-    *   **Command:** Execute project's pre-flight/lint and test suite commands.
-
-4.  **Iterative Review Loop (The "Recursive Clean")**
-    *   **Logic:** If any code was modified in Step 3, you **MUST** loop back to Step 1.
-    *   **Instruction:** "I've applied the fixes. Shall I perform a follow-up review to ensure 100% compliance, or move to the remote loop?"
-    *   **Exit Condition:** Only exit this loop and move to Phase 2 when the user explicitly says "Proceed" or if no findings remain.
-
-### PHASE 2: Remote Async Review & Testing
-5.  **The BugBot Loop (Recursive Verification)**
-    *   **Action:** Instruct user to commit, push, and WAIT for BugBot feedback. **NEVER** commit or push for the user.
-    *   **Process:** Paste Feedback -> Analyze -> Fix -> Test -> Push -> Wait.
-    *   **Condition:** Repeat this process until BugBot returns "Green" (no issues) or the user explicitly decides to bypass further fixes.
-
-6.  **Test Gap Analysis & Edge Cases**
-    *   **Action:** Review final fixes. Ask if tests are needed for new late-stage edge cases.
-
-### PHASE 3: Traceability & Final Spackle
-7.  **Traceability Audit**
-    *   **Action:** Scan all tests for `[REQ-ID]` tags.
-    *   **Requirement:** Every `REQ-ID` listed in `implementation_plan.md` MUST have at least one passing test.
-    *   **Output:** Alert the user if requirements are "untraced" (lack tests).
-
-8.  **Documentation Sync**
-    *   **Action 1 (Schema):** If DB schema modified, trigger `sync-schema-docs`, PAUSE for review.
-    *   **Action 2 (General Docs):** Check if `SPEC.md` or other docs need updates.
-
-9.  **Rule Harvesting**
-    *   **Action:** Trigger `harvest-rules` skill to codify new patterns.
-
-10. **PR Description**
-    *   **Action:** Trigger `pr-description-clipboard` skill. Ensure the draft mentions the `[REQ-ID]` and ADRs.
-
-11. **Merge Preparation**
-    *   **Action:** Tell user branch is ready for merge in GitHub UI.
+    <phase id="4" name="Final Spackle & PR">
+      <step id="4.1">
+        <action>Trigger `sync-schema-docs` if the database was modified.</action>
+        <yield>[PAUSE - AWAIT CONFIRMATION TO PROCEED]</yield>
+      </step>
+      <step id="4.2">
+        <action>Trigger `harvest-rules` to identify new patterns.</action>
+        <yield>[PAUSE - AWAIT CONFIRMATION TO PROCEED]</yield>
+      </step>
+      <step id="4.3">
+        <action>Trigger `pr-description-clipboard`.</action>
+        <yield>[PAUSE - BRANCH IS FINISHED]</yield>
+      </step>
+    </phase>
+  </workflow>
+</agentcore_skill>

@@ -11,7 +11,7 @@ As developers manage multiple projects across diverse tech stacks, AI "intellige
 AgentCore separates the **way we work** (SOPs) from the **tech we use** (Stack Specifics).
 
 ### ⚙️ The Engine (Universal SOPs)
-High-level workflows stored in `.cursor/skills/`. The logic of "How to start a feature" is tech-agnostic and shared across all projects.
+High-level workflows stored in `.cursor/skills/`. The logic of "How to start a task" is tech-agnostic and shared across all projects.
 
 ### ⛽ The Fuel (Project Rules)
 Stack-specific instructions in `.cursorrules` and project documentation. This tells the Engine how to apply its universal logic to specific libraries (e.g., Rails vs. Django).

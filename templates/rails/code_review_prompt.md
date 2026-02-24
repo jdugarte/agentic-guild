@@ -127,9 +127,9 @@ Your goal is to enforce our specific architectural constraints, catch "magic" co
 
 ---
 
-### 9. HRE Compliance & Traceability (Aerospace Grade)
+### 9. HRE Compliance & Traceability (Enterprise Grade)
 
-* **JPL Standards:**
+* **Deterministic Standards (HRE):**
   * **Complexity:** Flag any method with cyclomatic complexity > 10.
   * **Method Length:** STRICTLY flag any method > 60 lines (fit on one page).
   * **Assertions:** Ensure all state mutations (Services/Models) have Pre-condition and Post-condition assertions.
@@ -149,7 +149,7 @@ Your goal is to enforce our specific architectural constraints, catch "magic" co
 
 Organize feedback using these categories:
 
-1. **🛑 MUST FIX (Architectural/Safety/HRE)**: JPL violations, untraced code, security risks, Sandi Metz violations.
+1. **🛑 MUST FIX (Architectural/Safety/HRE)**: HRE violations, untraced code, security risks, Sandi Metz violations.
 2. **⚠️ STRONGLY RECOMMENDED (Clean Code/Resiliency)**: Naming, component extraction, missing retry logic, performance tweaks.
 3. **💡 NICE TO IMPROVE**: Readability, CSS refactors, test clarity.
 4. **📄 CHANGELOG & DOCS**: Missing CHANGELOG or SPEC.md/Traceability updates.

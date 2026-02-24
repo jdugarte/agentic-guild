@@ -82,7 +82,7 @@ Your goal is to enforce architectural strictness, catch performance killers (re-
 
 ### 5. Documentation & Config
 
-- **When this PR touches stack, layout, or config:** Consider whether any replication or blueprint docs need an update.
+- **When this PR touches stack, layout, or config:** Consider whether `SYSTEM_ARCHITECTURE.md` or other core docs need an update.
 - **Trigger an update if the PR:**
   - Adds or upgrades a core dependency (Expo, React Native, Drizzle, Tamagui, React Query, etc.).
   - Adds or changes test setup (Jest, jest-expo, RNTL, mocks, test scripts/config).
@@ -110,7 +110,7 @@ Your goal is to enforce architectural strictness, catch performance killers (re-
 
 Organize feedback using these categories:
 
-1. **🛑 MUST FIX (Audit / Safety)**: JPL violations, untraced code, `any` types, hardcoded strings.
+1. **🛑 MUST FIX (Audit / Safety)**: HRE violations, untraced code, `any` types, hardcoded strings.
 2. **⚠️ STRONGLY RECOMMENDED (Performance/Resiliency)**: Offline fallbacks, re-render risks, component extraction.
 3. **💡 NICE TO IMPROVE**: Naming, file structure, code readability.
 4. **📄 Docs/Config**: Updates for `SPEC.md`, `failure_matrix.md`, or stack/layout docs.

@@ -1,36 +1,74 @@
-# AI Developer Protocols (AgentCore)
+# 🧠 AgentCore: The AI Developer Operating System
 
-This repository serves as the "Global Brain" and meta-tooling environment for deploying, maintaining, and upgrading AI-assisted workflows across multiple projects (e.g., web applications, mobile apps, and backend services).
+[![Status: Active](https://img.shields.io/badge/Status-Active-success.svg)]()
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)]()
 
-## The End Goal
+AgentCore is a meta-tooling framework designed to centralize, standardize, and harden AI-assisted developer workflows. 
 
-We are building a centralized **AI Developer Protocol** that can be installed in any new or existing project. 
-The ultimate goal is to distribute this as a CLI utility (e.g., via Homebrew) so you can execute commands like:
+Modern AI coding assistants (like Cursor, GitHub Copilot, or Aider) are fundamentally "eager completion engines." If left unconstrained, they hallucinate workflows, bypass architectural boundaries, and suffer from "context amnesia" during long tasks. 
 
-```bash
-# Initialize AI workflows in a new project
-ai-tools init django
+AgentCore solves this by acting as a **Local Operating System** that forces AI agents to operate as strict, step-by-step state machines with transient memory and hard execution gateways.
 
-# Update the local tools with the latest intelligence from the global brain
-ai-tools update
-```
+## ✨ The Core Philosophy: Determinism Over Speed
 
-## How to Start Exploring
+AgentCore separates the **way we work** (SOPs) from the **tech we use** (Stack Specifics). It injects three critical layers into your local project:
 
-### 1. Universal Skills (`/skills/`)
-This directory contains the tech-agnostic Standard Operating Procedures (SOPs) for the AI. 
-- `start-feature`: The Discovery and TDD Loop engine.
-- `finish-branch`: The Code Review, BugBot, and PR closing engine.
-- `harvest-rules`: The engine that extracts learnings and updates the rules.
-- `status-check`: The context rehydrator.
+1. **The Engine (XML State Machines):** Universal skills are written in strict XML. The AI is programmed to hit hard `[PAUSE]` gateways, forcing it to stop generating text and wait for human authorization before proceeding to the next step.
+2. **The RAM (Transient Memory):** AgentCore initializes a git-ignored `.agentcore/` directory. The AI uses this to track active sessions, log blockers, and resume tasks precisely where it left off, surviving conversational tangents and context window limits.
+3. **The Constitution (Project Governance):** Agnostic templates (`SYSTEM_ARCHITECTURE.md`, `SPEC.md`, `deterministic_coding_standards.md`) anchor the AI. If you ask the AI to use a forbidden library, it will reject the request and demand an Architectural Decision Record (ADR).
 
-### 2. Universal Playbooks (`/playbooks/`)
-- `AI_DEVELOPER_PROTOCOL.md`: The 6-phase masterclass playbook to audit and refine documentation and AI rules in any project.
-- `AI_WORKFLOW_PLAYBOOK.md`: The manual explaining exactly how to use the custom skills.
-- `EXPECTED_PROJECT_STRUCTURE.md`: **Required reading for agents and maintainers.** Lists every file and folder the skills assume, how to create them, and what to do when something is missing. Synced projects get a copy at `docs/ai/EXPECTED_PROJECT_STRUCTURE.md`.
+## 📦 What's Included
 
-### 3. Synchronization (`sync.sh`)
-While the Go CLI is being built, a starter Bash script `sync.sh` is provided. You can run this in any project to download the universal skills directly from your GitHub repository.
+### Universal AI Skills (The Engine)
+Located in `.cursor/skills/`, these tech-agnostic workflows orchestrate the development lifecycle:
+* **`start-task`**: The Discovery, Planning, and TDD Loop engine. Enforces Correct-by-Construction (CbC).
+* **`finish-branch`**: Orchestrates local code review, High-Reliability Engineering (HRE) compliance audits, and PR preparation.
+* **`code-review`**: Runs project-specific static analysis and formats actionable, numbered fixes.
+* **`audit-compliance`**: An Independent Verification (IV&V) agent that mathematically checks code determinism.
+* **`status-check`**: The GPS. Reads the `.agentcore/` memory folder to diagnose blockers and rehydrate context.
+* **`harvest-rules`**: Scans Git diffs to extract new architectural patterns and map them to living documentation.
+* **`sync-schema-docs`**: Automatically maps raw database tables to business logic inside your `SPEC.md`.
+* **`pr-description-clipboard`**: Generates a Git-history-based PR draft and copies it to your clipboard.
 
-## Next Steps
-See `specs/META_TOOL_SPEC.md` for the blueprint on building the Go CLI and Homebrew distribution.
+### Universal Playbooks & Templates
+* **`AI_DEVELOPER_PROTOCOL.md`**: A 6-phase masterclass playbook to audit, clean, and refine documentation in any legacy project.
+* **Governance Templates**: Starter files for `DATA_FLOW_MAP.md`, `TESTING_STRATEGY_MATRIX.md`, and enterprise-grade coding standards.
+* **Stack Configurations**: Pre-configured `.cursorrules` and code review prompts for Rails, Django, and React Native.
+
+## 🚀 Getting Started
+
+You can inject the AgentCore OS into any existing or new project using the provided synchronization script.
+
+1. Navigate to your target project's root directory.
+2. Run the sync script pointing to the AgentCore repository:
+
+  ```bash
+  curl -s https://raw.githubusercontent.com/jdugarte/AgentCore/main/sync.sh
+  bash
+
+3. The script will automatically:
+* Build the `.agentcore/` memory scaffold and secure it in `.gitignore`.
+* Download the Universal XML Skills into `.cursor/skills/`.
+* Initialize missing Governance templates in `docs/core/`.
+* Inject the `AGENT_CORE_RULES.md` router into your project's `.cursorrules`.
+4. Copy the specific stack templates (e.g., Rails, React Native) from the AgentCore repo into your project to provide the "Fuel" for the OS.
+
+## 🗺️ Roadmap
+
+AgentCore is actively evolving to support larger teams and deeper automation. The following features are currently in development or proposed:
+
+* [ ] **The `ai-tools` Go CLI:** Replacing `sync.sh` with a compiled, zero-dependency Go binary distributed via Homebrew for robust versioning and multi-project synchronization.
+* [ ] **Localization Bridge:** "English for Rules, Local for Output." Allowing teams to configure the AI to communicate and generate specs in their native language while maintaining English code logic.
+* [ ] **Deep CI Integration:** Moving async holding patterns (like the BugBot loop) from local execution directly into GitHub Actions via API.
+* [ ] **Skill Versioning:** Allowing enterprise projects to pin their `.cursor/skills/` to specific AgentCore release versions.
+* [ ] **Visual Workflow Builder:** A GUI tool to generate the strict XML state-machine `SKILL.md` files without writing XML by hand.
+
+## 🤝 Contributing
+
+We welcome contributions! If you have developed a stack-agnostic AI skill, or have improvements to the High-Reliability Engineering (HRE) constraints, please submit a PR.
+
+Ensure any proposed workflows strictly follow the XML state-machine format and utilize the `[PAUSE]` gateway methodology.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
