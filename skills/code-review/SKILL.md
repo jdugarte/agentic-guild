@@ -1,18 +1,18 @@
 <agentcore_skill>
   <skill_definition>
     <name>code-review</name>
-    <description>Triggers a strict self-review of current project code changes. Uses the project's specific docs/ai/code_review_prompt.md.</description>
+    <description>Triggers a strict self-review of current project code changes, implementing a continuous review-fix-commit loop until perfect.</description>
   </skill_definition>
 
   <state_machine_directives>
     1. NEVER execute more than ONE <step> per response.
     2. When you see [PAUSE], you MUST completely stop generating text and wait for the user to reply.
-    3. Always end your response by explicitly stating the current step and telling the user what commands they can use to proceed.
+    3. CYCLIC EXECUTION: If a step explicitly instructs you to loop back to a previous phase, you must update your state and execute that target step in the NEXT response.
   </state_machine_directives>
 
   <pre_flight>
     <directive>Before executing the workflow, verify the necessary context exists.</directive>
-    <check>Verify `docs/core/SYSTEM_ARCHITECTURE.md` and `docs/core/SPEC.md` exist.</check>
+    <check>Verify `docs/ai/code_review_prompt.md` exists.</check>
     <action>If they are missing, abort the skill and point the user to `docs/ai/EXPECTED_PROJECT_STRUCTURE.md`. Do NOT hallucinate their contents.</action>
   </pre_flight>
 
@@ -31,14 +31,20 @@
       </step>
     </phase>
 
-    <phase id="2" name="Implementation">
+    <phase id="2" name="Implementation & Verification Loop">
       <step id="2.1">
         <action>
           Parse the user's numeric selection.
           Implement only the requested fixes.
           Run the local test suite and linter.
         </action>
-        <yield>[PAUSE - AWAIT COMMAND TO RE-REVIEW OR EXIT]</yield>
+        <yield>
+          [PAUSE - AWAIT COMMAND]
+          Ask the user to review the applied changes and commit them locally if satisfied.
+          Offer two explicit commands:
+          1. "Reply 'RE-REVIEW' to loop back to Phase 1, Step 1.1 and scan the new commits for remaining issues."
+          2. "Reply 'DONE' to exit the code review skill."
+        </yield>
       </step>
     </phase>
   </workflow>
