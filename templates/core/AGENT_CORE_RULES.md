@@ -30,4 +30,14 @@
     </anchors>
     <auto_enforcement>If a user prompt violates these anchors, you must reject the request and suggest drafting an ADR (`docs/core/ADRs/`) to officially change the architecture.</auto_enforcement>
   </architectural_anchors>
+
+  <intent_routing>
+    <directive>You must map user intents to the strict XML skills located in `.cursor/skills/`. Before answering a prompt, check if it matches these triggers. If it does, you MUST silently read the associated SKILL.md file and execute its state machine.</directive>
+    <routes>
+      <route trigger="start task, new feature, bugfix, build a">Read `.cursor/skills/start-task/SKILL.md`</route>
+      <route trigger="finish branch, code review, open a PR">Read `.cursor/skills/finish-branch/SKILL.md`</route>
+      <route trigger="status check, where are we, blocked">Read `.cursor/skills/status-check/SKILL.md`</route>
+      <route trigger="harvest rules, update docs">Read `.cursor/skills/harvest-rules/SKILL.md`</route>
+    </routes>
+  </intent_routing>
 </agentcore_operating_system>
