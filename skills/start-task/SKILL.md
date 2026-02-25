@@ -17,7 +17,7 @@
   </pre_flight>
 
   <workflow>
-    <phase id="1" name="Context & Memory Initialization">
+    <phase id="1" name="Context Initialization">
       <step id="1.1">
         <action>
           Ask the user to classify the task: (1) Feature, (2) Bugfix, (3) Refactor, or (4) Chore.
@@ -25,20 +25,15 @@
         </action>
         <yield>[PAUSE - AWAIT USER CLASSIFICATION]</yield>
       </step>
-      <step id="1.2">
-        <action>
-          Create a new session file in `.agentcore/active_sessions/` named `task_[name].md`.
-          Update `.agentcore/current_state.md` to point to this new file.
-          Write the task classification and description into the session file.
-        </action>
-        <yield>[PAUSE - AWAIT USER TO SAY "PROCEED"]</yield>
-      </step>
     </phase>
 
-    <phase id="2" name="Planning & Constraints">
+    <phase id="2" name="Memory Update & Planning">
       <step id="2.1">
         <action>
-          Draft `docs/implementation_plan.md` based on the classification:
+          Silently create a new session file in `.agentcore/active_sessions/` named `task_[name].md`.
+          Silently update `.agentcore/current_state.md` to point to this new file.
+          Write the task classification and description into the session file.
+          Next, draft the step-by-step implementation plan directly inside the `<implementation_plan>` block of the newly created `task_[name].md` file.
           - If Bugfix: Step 1 MUST be "Write a failing test that reproduces the bug."
           - If Refactor: Step 1 MUST be "Run existing tests to establish a green baseline."
           - If Feature: You MUST define Pre-conditions and Post-conditions for any new core functions.
@@ -50,7 +45,7 @@
     <phase id="3" name="Execution (Iterative TDD)">
       <step id="3.1">
         <action>
-          Read the next pending step from `docs/implementation_plan.md`.
+          Read the next pending step from the `<implementation_plan>` block inside the active `task_[name].md` file.
           Write the failing test for this step only.
           Tag the test with the appropriate [REQ-ID] from `docs/core/SPEC.md`.
         </action>

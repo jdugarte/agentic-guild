@@ -7,7 +7,7 @@ Date: 2026-02-20
 **Goal**: Safely begin working on a new feature, enforcing design and discovery before coding.
 **Workflow Steps**:
 1. **Discovery Q&A**: Interactively gather the context of the feature from the user.
-2. **Draft Implementation Plan**: Create a detailed, hierarchical `implementation_plan.md`.
+2. **Planning & Constraints**: Draft a detailed, hierarchical implementation plan directly inside the active session memory, anchored to the system architecture.
 3. **Architectural Shifts (ADRs)**: Flag and document significant changes.
 4. **Schema Mapping**: Map any database changes.
 5. **Execution**: Loop through a strict, iterative TDD process step-by-step to prevent huge code dumps.
@@ -26,4 +26,11 @@ Date: 2026-02-20
 
 ### 3. Status Check
 **Goal**: Understand blocking issues and re-hydrate the AI's state.
-**Workflow Action**: The AI should read `implementation_plan.md`, examine the current git state, run the test suite, and identify exactly _Who_ (the developer, the AI, a specific module) is blocking progress on the feature.
+**Workflow Action**: The AI reads `.agentcore/current_state.md`, the active session memory plan, and the git state to output a macro/micro status report and identify exactly what is blocking progress.
+
+## Memory & State Management (Agent RAM)
+
+AgentCore utilizes a hidden `.agentcore/` folder to survive long conversations and tangents. 
+
+* **To Resume Work:** If you get distracted by a tangent or start a new chat window, simply tell the AI: **"Resume Task"** or **"Where were we?"**. The AI will read `.agentcore/current_state.md` and immediately pick up on the exact phase and step you left off on.
+* **To Log Debt:** The AI will automatically log technical debt or blocked tasks into `.agentcore/pending_refactors.md` and `.agentcore/blocker_log.md` instead of forgetting them.

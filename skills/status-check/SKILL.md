@@ -21,7 +21,7 @@
         <action>
           Read `.agentcore/current_state.md`.
           Read the active session file in `.agentcore/active_sessions/` indicated by the current state.
-          Read `docs/implementation_plan.md` to see unchecked boxes.
+          Read the `<implementation_plan>` block inside that session file to see unchecked boxes.
           Read `git status` and `git diff main --name-status`.
         </action>
         <yield>[PAUSE - AUTO-TRANSITION TO 1.2]</yield>
