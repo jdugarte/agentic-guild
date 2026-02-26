@@ -49,8 +49,14 @@ The `sync-docs` skill checks these docs against the branch diff and updates any 
 **To add more docs:** Update this table in `docs/ai/EXPECTED_PROJECT_STRUCTURE.md`. Add the path and the condition that triggers an update. The sync-docs skill reads this list.
 
 ## 5. Project-Specific Configuration
-Projects can add a "Configuration" section to this document or a `docs/ai/project_config.md` file:
+
+### 5.1 `.cursorrules` &lt;project_config&gt;
+The `.cursorrules` file contains a `<project_config>` block (from AgentCore). Projects should fill in:
 | Key | Purpose |
 |-----|---------|
-| Schema path | Path to the raw database schema (e.g. `db/schema.rb`, `prisma/schema.prisma`, `db/schema.ts`). If not specified, sync-docs infers from common paths. |
+| Schema path | Path to the raw database schema (e.g. `db/schema.rb`, `prisma/schema.prisma`, `db/schema.ts`). Skills that need it (e.g. sync-docs) read this first. If not filled in, the skill will infer a path, ask you to confirm, and remind you to fill it for future runs. |
+
+### 5.2 Other config sources
+| Key | Purpose |
+|-----|---------|
 | Linter commands | See `docs/ai/code_review_prompt.md` — projects define Quality/Pre-Flight commands there; start-task and code-review read it. |

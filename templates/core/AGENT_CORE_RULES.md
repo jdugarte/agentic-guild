@@ -21,6 +21,11 @@
     </rules>
   </execution_protocol>
 
+  <project_config>
+    Projects fill in project-specific paths here. Skills that need these paths will read them.
+    Schema path: [e.g. db/schema.rb, prisma/schema.prisma, db/schema.ts]
+  </project_config>
+
   <architectural_anchors>
     <directive>You are strictly forbidden from inventing technical decisions. Your code generation must be anchored to the project's living documentation.</directive>
     <anchors>
