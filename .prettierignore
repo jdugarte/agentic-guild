@@ -1,5 +1,0 @@
-node_modules
-.git
-.agentcore
-*.lock
-package-lock.json

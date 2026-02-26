@@ -1,5 +1,0 @@
-{
-  "plugins": ["prettier-plugin-sh"],
-  "proseWrap": "preserve",
-  "printWidth": 200
-}
