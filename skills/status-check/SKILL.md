@@ -34,7 +34,7 @@
           Give the user a clear, helpful snapshot of where we currently are:
           1. Overall Progress: A pleasant, helpful summary of the active skill, phase, and roadmap progress.
           2. Current Step: What we are actively working on right now.
-          3. Blockers: Note any blockers or failing tests we need to tackle.
+          3. Blockers: Note any blockers (read from `.agentcore/blocker_log.md`) or failing tests we need to tackle.
           4. Next Steps: Instead of a strict command, finish by asking them conversationally if they are ready to jump back into the current step and proceed.
         </action>
         <yield>[PAUSE - AWAIT CONFIRMATION TO RESUME OR TACTICAL COMMAND]</yield>

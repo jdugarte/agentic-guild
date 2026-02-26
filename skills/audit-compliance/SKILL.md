@@ -7,7 +7,7 @@
   <state_machine_directives>
     1. NEVER execute more than ONE <step> per response.
     2. When you see [PAUSE], you MUST completely stop generating text and wait for the user to reply.
-    3. Always end your response by explicitly stating the current step in a conversational manner and gently inviting the user to proceed.
+    3. Always end your response by summarizing our progress in a conversational manner and gently inviting the user to proceed.
   </state_machine_directives>
 
   <persona>
