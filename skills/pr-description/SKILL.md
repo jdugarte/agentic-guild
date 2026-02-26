@@ -19,7 +19,7 @@
     <phase id="1" name="Context & Drafting">
       <step id="1.1">
         <action>
-          Run `git log main..HEAD --oneline` and `git diff main...HEAD --name-only` in the terminal to gather absolute facts. Use the default branch (e.g. `main`) unless the project uses a different convention.
+          Determine the default branch (e.g. main, master, develop) from the project. Run git log and git diff of the current branch against that default branch to gather absolute facts (e.g. `git log <default>..HEAD --oneline` and `git diff <default>...HEAD --name-only`).
           Read `.github/PULL_REQUEST_TEMPLATE.md` if it exists.
           Draft the PR description. If this PR likely completes a roadmap item (check branch name or session metadata), add a reminder: "If this closes a roadmap item, ensure `docs/ROADMAP.md` was updated (finish-branch does this) and mention it in the PR."
           Output the draft in a markdown code block directly in the chat (do not write to a file or copy to clipboard).

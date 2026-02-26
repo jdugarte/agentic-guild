@@ -8,6 +8,7 @@
     1. NEVER execute more than ONE <step> per response.
     2. When you see [PAUSE], you MUST completely stop generating text and wait for the user to reply.
     3. Always end your response by explicitly stating the current step and telling the user what commands they can use to proceed.
+    4. CYCLIC EXECUTION: You are permitted to loop backward (e.g. return to Step 3.1 from 3.3) when the workflow dictates it for TDD iteration.
   </state_machine_directives>
 
   <pre_flight>
@@ -22,22 +23,25 @@
       <step id="1.1">
         <action>
           First, determine if the user's message already contains a task description (e.g. "start task add export" or "build the dashboard feature").
-          - If the user provided a description: Read `docs/ROADMAP.md` if it exists. Try to infer which pending roadmap item matches. If a match is found: Ask "Did you mean [item]? Reply YES to confirm, or NO to treat as a new task." [PAUSE]. If no match: Treat as new task and [AUTO-TRANSITION TO 1.3].
+          - If the user provided a description: Read `docs/ROADMAP.md` if it exists. Try to infer which pending roadmap item matches. If a match is found: Ask "Did you mean [item]? Reply YES to confirm, or NO to treat as a new task." [PAUSE]. On user reply, [AUTO-TRANSITION TO 1.3]. If no match: Treat as new task and [AUTO-TRANSITION TO 1.3].
           - If the user did NOT provide a description: If `docs/ROADMAP.md` exists, list pending items and ask: "Pick one, or describe a new task." [PAUSE]. If ROADMAP does not exist: Ask for a brief description of the goal. [PAUSE].
         </action>
-        <yield>[PAUSE - AWAIT USER CHOICE OR CONFIRMATION. If you asked "Did you mean [item]?", the user's YES/NO is handled in step 1.3.]</yield>
+        <yield>
+          If no roadmap match (description path): [AUTO-TRANSITION TO 1.3].
+          If you asked a question ("Did you mean [item]?", "Pick one, or describe", or "Describe the goal"): [PAUSE] — user's YES/NO to "Did you mean [item]?" is handled in step 1.3.
+        </yield>
       </step>
       <step id="1.2">
         <action>
-          Parse the user's reply. If they picked an item from the roadmap: Set that as the task, write `<roadmap_item>` to the session metadata, infer classification (Feature/Bugfix/Refactor/Chore), and [AUTO-TRANSITION TO 2.1]. If they described something: Try to infer which pending roadmap item matches (if any). If a match is found: Ask "Did you mean [item]? Reply YES to confirm, or NO to treat as a new task." [PAUSE]. If no match: Treat as new task and [AUTO-TRANSITION TO 1.3].
+          Parse the user's reply. If they picked an item from the roadmap: Set that as the task, write `<roadmap_item>` to the session metadata, infer classification (Feature/Bugfix/Refactor/Chore), and [AUTO-TRANSITION TO 2.1]. If they described something: Try to infer which pending roadmap item matches (if any). If a match is found: Ask "Did you mean [item]? Reply YES to confirm, or NO to treat as a new task." [PAUSE]. On user reply, [AUTO-TRANSITION TO 1.3]. If no match: Treat as new task and [AUTO-TRANSITION TO 1.3].
         </action>
         <yield>[PAUSE - AWAIT CONFIRMATION OF INFERENCE, OR AUTO-TRANSITION]</yield>
       </step>
       <step id="1.3">
         <action>
-          If user replied YES to inference: Use that roadmap item, set `<roadmap_item>`, infer classification, and [AUTO-TRANSITION TO 2.1]. If NO or new task: Ask the user to classify: (1) Feature, (2) Bugfix, (3) Refactor, or (4) Chore. Ask for a brief description of the goal.
+          If user replied YES to inference: Use that roadmap item, set `<roadmap_item>`, infer classification, and [AUTO-TRANSITION TO 2.1]. If NO or new task: The task description is already known (from 1.1 or 1.2). Ask the user to classify: (1) Feature, (2) Bugfix, (3) Refactor, or (4) Chore.
         </action>
-        <yield>[PAUSE - AWAIT USER CLASSIFICATION AND DESCRIPTION]</yield>
+        <yield>[PAUSE - AWAIT USER CLASSIFICATION]</yield>
       </step>
     </phase>
 

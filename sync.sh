@@ -61,6 +61,14 @@ curl -s "$REPO_URL/skills/pr-description/SKILL.md" > .cursor/skills/pr-descripti
 curl -s "$REPO_URL/skills/roadmap-manage/SKILL.md" > .cursor/skills/roadmap-manage/SKILL.md
 curl -s "$REPO_URL/skills/roadmap-consult/SKILL.md" > .cursor/skills/roadmap-consult/SKILL.md
 
+# Remove obsolete/renamed skill directories (prevents AI from discovering defunct skills)
+for obsolete in sync-schema-docs pr-description-clipboard; do
+  if [ -d ".cursor/skills/$obsolete" ]; then
+    echo "   🧹 Removing obsolete skill .cursor/skills/$obsolete..."
+    rm -rf ".cursor/skills/$obsolete"
+  fi
+done
+
 # 5. Download Templates (To temporary holding folder)
 echo "📥 Syncing Governance Templates..."
 curl -s "$REPO_URL/templates/pr/PULL_REQUEST_TEMPLATE.md" > .github/PULL_REQUEST_TEMPLATE.md

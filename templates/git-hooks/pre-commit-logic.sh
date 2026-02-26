@@ -1,4 +1,4 @@
-#!/bin/bash
+# shellcheck shell=bash
 # --- AGENTCORE PRE-COMMIT START ---
 # Reserved for future AgentCore hook logic.
 # --- AGENTCORE PRE-COMMIT END ---
