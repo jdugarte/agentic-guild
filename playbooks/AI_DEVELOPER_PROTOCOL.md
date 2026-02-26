@@ -19,9 +19,8 @@
 
 **Goal:** Find repeated information.
 
-1.  **Cursorrules Check:** Compare `docs/` against `.cursorrules`.
-    - _Question:_ Is `docs/tech_stack.md` just a copy of the "Tech Stack" section in `.cursorrules`?
-    - _Question:_ Does `docs/component_library.md` repeat rules already defined in `.cursorrules`?
+1.  **Cursorrules Check:** Compare `docs/` against `.cursorrules` and `docs/core/SYSTEM_ARCHITECTURE.md`.
+    - _Question:_ Does any doc (e.g. a legacy `docs/tech_stack.md` or `docs/component_library.md`) merely duplicate `.cursorrules` or `docs/core/SYSTEM_ARCHITECTURE.md`?
 2.  **Cross-Doc Check:** Do disparate docs repeat the same architectural patterns?
 
 ## Phase 3: Drift Analysis (Truth vs. Reality)
@@ -69,7 +68,7 @@
     - Ensure `docs/ROADMAP.md` exists (AgentCore sync initializes it) for project planning and task tracking.
     - Consolidate AI rules into `.cursorrules` to act as an IF/THEN routing table, and ensure it contains the `<agentcore_operating_system>` header.
     - **CRITICAL RULE:** All agents and instructions must explicitly forbid auto-committing or auto-pushing code. At most, suggest a commit message.
-    - Delete legacy directories like `.agent/` or `.cursor/rules/` so all tools share a single source of truth.
+    - Delete legacy directories (e.g. `.agent/`, `.cursor/rules/`) if they duplicate `.agentcore/` or `.cursorrules`; ensure all tools share a single source of truth.
 2.  **Skill Refinement (XML State Machines):**
     - Update universal workflow skills (e.g., `start-task`, `finish-branch`, `status-check`) to ensure they use strict `<agentcore_skill>` XML formatting.
     - **Start Task:** Ensure the AI forces a classification phase, drafts a hierarchical implementation plan inside the active session file (`active_sessions/task_*.md`), checks `SYSTEM_ARCHITECTURE.md`, and loops through strict TDD.

@@ -43,7 +43,7 @@ A system-wide utility to initialize and synchronize projects with the Global Bra
 
 ### Phase 1: Foundation (Current)
 - Unified PR Templates and Anti-Drift Checklists.
-- Standardized `SPEC.md` and `ui_roadmap` templates.
+- Standardized `SPEC.md` and `ROADMAP.md` templates.
 - Baseline `sync.sh` for multi-repo synchronization.
 
 ### Phase 2: Professionalization

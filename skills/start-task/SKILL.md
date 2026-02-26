@@ -13,7 +13,7 @@
   <pre_flight>
     <directive>Before executing the workflow, verify the necessary context exists.</directive>
     <check>Verify `docs/core/SYSTEM_ARCHITECTURE.md` and `docs/core/SPEC.md` exist.</check>
-    <action>If they are missing, abort the skill and point the user to `docs/ai/EXPECTED_PROJECT_STRUCTURE.md`. Do NOT hallucinate their contents.</action>
+    <action>If they are missing, abort the skill, inform the user, and explicitly ask: "Do you want me to initialize the missing files using the templates?" If the user says yes, run sync.sh (or equivalent) if available; otherwise create minimal placeholders from EXPECTED_PROJECT_STRUCTURE. Do NOT hallucinate contents without user confirmation.</action>
     <tdd_strictness>If the user prompts you to write implementation code before a failing test has been confirmed, remind them of the strict TDD routine (write failing test first, then make it pass) and ask if they want to proceed with TDD or skip.</tdd_strictness>
   </pre_flight>
 
@@ -44,7 +44,7 @@
     <phase id="2" name="Memory Update & Planning">
       <step id="2.1">
         <action>
-          Silently create a new session file in `.agentcore/active_sessions/` named `task_[name].md`. If the task came from the roadmap, include `<roadmap_item>` in the session metadata.
+          Derive `[name]` as a short, kebab-case slug from the task description (e.g. `add-export`, `fix-login-bug`, `dashboard-widget`). Silently create a new session file in `.agentcore/active_sessions/` named `task_[name].md`. If the task came from the roadmap, include `<roadmap_item>` in the session metadata.
           Silently update `.agentcore/current_state.md` to point to this new file.
           Write the task classification and description into the session file.
           Next, draft the step-by-step implementation plan directly inside the `<implementation_plan>` block of the newly created `task_[name].md` file. Use `<step id="N" status="pending">[Description]</step>` format (see task_template.md).
@@ -61,7 +61,7 @@
         <action>
           Read the next pending step from the `<implementation_plan>` block inside the active `task_[name].md` file.
           Write the failing test for this step only.
-          Tag the test with the appropriate [REQ-ID] from `docs/core/SPEC.md`.
+          Tag the test with the appropriate [REQ-ID] from `docs/core/SPEC.md` (format: `REQ-[DOMAIN]-[NNN]`, e.g. `REQ-AUTH-001`; projects may customize).
         </action>
         <yield>[PAUSE - AWAIT TEST APPROVAL]</yield>
       </step>

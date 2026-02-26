@@ -12,7 +12,7 @@
   <pre_flight>
     <directive>Before executing the workflow, verify the necessary context exists.</directive>
     <check>Verify `docs/core/SYSTEM_ARCHITECTURE.md` and `docs/core/SPEC.md` exist.</check>
-    <action>If they are missing, abort the skill and point the user to `docs/ai/EXPECTED_PROJECT_STRUCTURE.md`. Do NOT hallucinate their contents.</action>
+    <action>If they are missing, abort the skill, inform the user, and explicitly ask: "Do you want me to initialize the missing files using the templates?" If the user says yes, run sync.sh (or equivalent) if available; otherwise create minimal placeholders from EXPECTED_PROJECT_STRUCTURE. Do NOT hallucinate contents without user confirmation.</action>
     <rehydrate>If `.agentcore/` or `.agentcore/current_state.md` is missing or empty: Create the minimal structure (current_state.md, blocker_log.md, pending_refactors.md, active_sessions/), advise the user to run sync.sh for full setup, and output a minimal status report. Then [PAUSE].</rehydrate>
   </pre_flight>
 
@@ -24,16 +24,8 @@
     <phase id="1" name="State Read">
       <step id="1.1">
         <action>
-          Read `.agentcore/current_state.md`.
-          Read the active session file in `.agentcore/active_sessions/` indicated by the current state.
-          Read the `<implementation_plan>` block inside that session file to see unchecked boxes.
-          Read `git status` and `git diff` against the default branch (e.g. `main`).
-        </action>
-        <yield>[PAUSE - AUTO-TRANSITION TO 1.2]</yield>
-      </step>
-      <step id="1.2">
-        <action>
-          If `docs/ROADMAP.md` exists: Count Done, In Progress, Pending, Backlog. Include a one-line Roadmap summary (e.g. "Roadmap: 3 done, 1 in progress, 5 pending").
+          Read `.agentcore/current_state.md`, the active session file in `.agentcore/active_sessions/` (indicated by current state), the `<implementation_plan>` block inside that session file, `git status`, and `git diff` against the default branch (e.g. `main`).
+          If `docs/ROADMAP.md` exists: Count Done, In Progress, Pending, Backlog for a one-line summary (e.g. "Roadmap: 3 done, 1 in progress, 5 pending").
           Output a strict Status Report:
           1. Macro Status: (e.g., Active Skill, Current Phase, Roadmap summary)
           2. Micro Status: (e.g., Current Step, active files)

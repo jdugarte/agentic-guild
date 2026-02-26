@@ -1,5 +1,7 @@
 # Project Specification (SPEC.md)
 
+> **REQ-ID format:** Use `REQ-[DOMAIN]-[NNN]` for traceability (e.g. `REQ-AUTH-001`, `REQ-DASH-002`). Projects may customize the domain prefix.
+
 ## 🎯 Purpose & Vision
 [A high-level summary of what the application does and why it exists.]
 
