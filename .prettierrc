@@ -1,0 +1,5 @@
+{
+  "plugins": ["prettier-plugin-sh"],
+  "proseWrap": "always",
+  "printWidth": 88
+}

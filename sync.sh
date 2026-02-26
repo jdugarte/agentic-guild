@@ -19,18 +19,22 @@ mkdir -p docs/.agent-core-templates
 # 2. Configure Gitignore for AI Memory
 GITIGNORE_FILE=".gitignore"
 if [ -f "$GITIGNORE_FILE" ]; then
-    if ! grep -q ".agentcore/\*" "$GITIGNORE_FILE"; then
-        echo "📝 Securing .agentcore/ memory folder in .gitignore..."
-        echo "" >> "$GITIGNORE_FILE"
-        echo "# AgentCore Transient Memory" >> "$GITIGNORE_FILE"
-        echo ".agentcore/*" >> "$GITIGNORE_FILE"
-        echo "!.agentcore/.gitkeep" >> "$GITIGNORE_FILE"
-    fi
+  if ! grep -q ".agentcore/\*" "$GITIGNORE_FILE"; then
+    echo "📝 Securing .agentcore/ memory folder in .gitignore..."
+    {
+      echo ""
+      echo "# AgentCore Transient Memory"
+      echo ".agentcore/*"
+      echo "!.agentcore/.gitkeep"
+    } >> "$GITIGNORE_FILE"
+  fi
 else
-    echo "📝 Creating .gitignore to secure .agentcore/ memory..."
-    echo "# AgentCore Transient Memory" > "$GITIGNORE_FILE"
-    echo ".agentcore/*" >> "$GITIGNORE_FILE"
-    echo "!.agentcore/.gitkeep" >> "$GITIGNORE_FILE"
+  echo "📝 Creating .gitignore to secure .agentcore/ memory..."
+  {
+    echo "# AgentCore Transient Memory"
+    echo ".agentcore/*"
+    echo "!.agentcore/.gitkeep"
+  } > "$GITIGNORE_FILE"
 fi
 
 # Ensure .gitkeep exists so the folder structure survives git
@@ -79,38 +83,38 @@ echo "🏗️ Initializing Missing Governance & Memory Files..."
 
 declare -a core_files=("SPEC.md" "SYSTEM_ARCHITECTURE.md" "deterministic_coding_standards.md" "TESTING_STRATEGY_MATRIX.md" "DATA_FLOW_MAP.md")
 for file in "${core_files[@]}"; do
-    if [ ! -f "docs/core/$file" ]; then
-        echo "   📄 Initializing docs/core/$file..."
-        cp "docs/.agent-core-templates/$file" "docs/core/$file"
-    fi
+  if [ ! -f "docs/core/$file" ]; then
+    echo "   📄 Initializing docs/core/$file..."
+    cp "docs/.agent-core-templates/$file" "docs/core/$file"
+  fi
 done
 
 declare -a memory_files=("current_state.md" "blocker_log.md" "pending_refactors.md")
 for file in "${memory_files[@]}"; do
-    if [ ! -f ".agentcore/$file" ]; then
-        echo "   🧠 Initializing .agentcore/$file..."
-        cp "docs/.agent-core-templates/$file" ".agentcore/$file"
-    fi
+  if [ ! -f ".agentcore/$file" ]; then
+    echo "   🧠 Initializing .agentcore/$file..."
+    cp "docs/.agent-core-templates/$file" ".agentcore/$file"
+  fi
 done
 
 if [ ! -f ".agentcore/active_sessions/task_template.md" ]; then
-    cp docs/.agent-core-templates/task_template.md .agentcore/active_sessions/task_template.md
+  cp docs/.agent-core-templates/task_template.md .agentcore/active_sessions/task_template.md
 fi
 
 if [ ! -f "docs/ROADMAP.md" ]; then
-    echo "   📄 Initializing docs/ROADMAP.md..."
-    cp docs/.agent-core-templates/ROADMAP.md docs/ROADMAP.md
+  echo "   📄 Initializing docs/ROADMAP.md..."
+  cp docs/.agent-core-templates/ROADMAP.md docs/ROADMAP.md
 fi
 
 # 7. Inject AgentCore OS Rules into .cursorrules
 if [ -f "docs/.agent-core-templates/AGENT_CORE_RULES.md" ]; then
-    if [ ! -f ".cursorrules" ]; then
-        echo "   ⚙️ Creating .cursorrules with AgentCore OS..."
-        cp docs/.agent-core-templates/AGENT_CORE_RULES.md .cursorrules
-    elif ! grep -q "<agentcore_operating_system>" ".cursorrules"; then
-        echo "   ⚙️ Prepending AgentCore OS to existing .cursorrules..."
-        cat docs/.agent-core-templates/AGENT_CORE_RULES.md .cursorrules > .cursorrules.tmp && mv .cursorrules.tmp .cursorrules
-    fi
+  if [ ! -f ".cursorrules" ]; then
+    echo "   ⚙️ Creating .cursorrules with AgentCore OS..."
+    cp docs/.agent-core-templates/AGENT_CORE_RULES.md .cursorrules
+  elif ! grep -q "<agentcore_operating_system>" ".cursorrules"; then
+    echo "   ⚙️ Prepending AgentCore OS to existing .cursorrules..."
+    cat docs/.agent-core-templates/AGENT_CORE_RULES.md .cursorrules > .cursorrules.tmp && mv .cursorrules.tmp .cursorrules
+  fi
 fi
 
 # Cleanup
@@ -122,21 +126,21 @@ curl -s "$REPO_URL/templates/git-hooks/pre-commit-logic.sh" > .cursor/pre-commit
 
 HOOK_FILE=".git/hooks/pre-commit"
 if [ -f "$HOOK_FILE" ]; then
-    if ! grep -q "AGENTCORE PRE-COMMIT" "$HOOK_FILE"; then
-        echo "📝 Appending safety check to existing pre-commit hook..."
-        cat .cursor/pre-commit-logic.sh >> "$HOOK_FILE"
-    else
-        echo "✅ AgentCore pre-commit hook already present."
-    fi
+  if ! grep -q "AGENTCORE PRE-COMMIT" "$HOOK_FILE"; then
+    echo "📝 Appending safety check to existing pre-commit hook..."
+    cat .cursor/pre-commit-logic.sh >> "$HOOK_FILE"
+  else
+    echo "✅ AgentCore pre-commit hook already present."
+  fi
 else
-    if [ -d ".git/hooks" ]; then
-        echo "🆕 Creating new pre-commit hook..."
-        echo "#!/bin/bash" > "$HOOK_FILE"
-        cat .cursor/pre-commit-logic.sh >> "$HOOK_FILE"
-        chmod +x "$HOOK_FILE"
-    else
-        echo "⚠️ .git/hooks directory not found. Are you in the root of a git repository?"
-    fi
+  if [ -d ".git/hooks" ]; then
+    echo "🆕 Creating new pre-commit hook..."
+    echo "#!/bin/bash" > "$HOOK_FILE"
+    cat .cursor/pre-commit-logic.sh >> "$HOOK_FILE"
+    chmod +x "$HOOK_FILE"
+  else
+    echo "⚠️ .git/hooks directory not found. Are you in the root of a git repository?"
+  fi
 fi
 rm -f .cursor/pre-commit-logic.sh
 

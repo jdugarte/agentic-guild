@@ -1,0 +1,14 @@
+{
+  "name": "agentcore",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "check": "bash scripts/check.sh",
+    "fix": "prettier --write ."
+  },
+  "devDependencies": {
+    "markdown-link-check": "^3.12.2",
+    "prettier": "^3.4.2",
+    "prettier-plugin-sh": "^0.17.2"
+  }
+}
