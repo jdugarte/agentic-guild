@@ -32,7 +32,7 @@
         </action>
         <yield>
           [PAUSE - AWAIT USER COMMAND]
-          Ask the user: "Reply with the comma-separated numbers of the fixes you want me to apply (e.g., '1.2, 2.1'), reply 'ALL' to implement everything, or 'SKIP' to ignore."
+          Conversationally ask the user which fixes they would like applied (by number, all of them, or if they'd prefer to skip for now).
         </yield>
       </step>
     </phase>
@@ -47,9 +47,7 @@
         <yield>
           [PAUSE - AWAIT COMMAND]
           Ask the user to review the applied changes and commit them locally if satisfied.
-          Offer two explicit commands:
-          1. "Reply 'RE-REVIEW' to loop back to Phase 1, Step 1.1 and scan the new commits for remaining issues."
-          2. "Reply 'DONE' to exit the code review skill."
+          Conversationally ask whether they'd like to do another review pass over the new commits, or if they are completely finished with the review.
         </yield>
       </step>
     </phase>
