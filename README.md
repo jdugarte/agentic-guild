@@ -64,6 +64,7 @@ AgentCore is actively evolving to support larger teams and deeper automation. Th
 * [ ] **Deep CI Integration:** Moving async holding patterns (like the BugBot loop) from local execution directly into GitHub Actions via API.
 * [ ] **Skill Versioning:** Allowing enterprise projects to pin their `.cursor/skills/` to specific AgentCore release versions.
 * [ ] **Visual Workflow Builder:** A GUI tool to generate the strict XML state-machine `SKILL.md` files without writing XML by hand.
+* [ ] **Central Config (agent_core.yml):** Optional project config file for schema path, default branch, and other options. See [specs/proposals/AGENT_CORE_CONFIG_SPEC.md](specs/proposals/AGENT_CORE_CONFIG_SPEC.md).
 
 ## 🤝 Contributing
 
