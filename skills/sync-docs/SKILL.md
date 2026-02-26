@@ -48,7 +48,7 @@
       </step>
       <step id="2.2">
         <action>
-          Parse the user's reply from Step 2.1. If they replied YES or provided a path: use that path and proceed to 3.1. If they replied NO: note that SCHEMA_REFERENCE will be skipped for this run; proceed to 3.1.
+          Parse the user's reply from Step 2.1 to determine their intent. If they confirmed the path or provided a new one: use that path and proceed to 3.1. If they chose to skip: note that SCHEMA_REFERENCE will be skipped for this run; proceed to 3.1.
         </action>
         <yield>[AUTO-TRANSITION TO 3.1]</yield>
       </step>
