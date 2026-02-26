@@ -45,7 +45,7 @@ You can inject the AgentCore OS into any existing or new project using the provi
 2. Run the sync script pointing to the AgentCore repository:
 
     ```bash
-    curl -s https://raw.githubusercontent.com/jdugarte/AgentCore/main/sync.sh
+    curl -s https://raw.githubusercontent.com/jdugarte/AgentCore/main/sync.sh | bash
     ```
 
 3. The script will automatically:
