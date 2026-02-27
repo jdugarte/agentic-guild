@@ -69,7 +69,7 @@
           Parse the user's response to determine intent.
           1. First, process the intent:
             - If they want to discard or completely rewrite the plan for the current task: Delete the existing `<implementation_plan>` block from the `task_[name].md` session file so it can be cleanly redrafted, and [AUTO-TRANSITION TO 2.1].
-            - If they want a completely different task: [AUTO-TRANSITION TO 1.1].
+            - If they want a completely different task: Delete `.agentcore/current_state.md` so the old task is no longer active, and [AUTO-TRANSITION TO 1.1].
             - If they rejected the plan without direction, said "start over" (which is ambiguous), or their response is otherwise ambiguous: Ask clarifying questions to determine if they want to rewrite the current plan or reconsider the task completely. (STOP processing further steps).
             - If they suggested tweaks: Update the `task_[name].md` session file `<implementation_plan>` with the requested modifications. If the tweak changes the task classification (e.g., to Bugfix), ensure you also update the classification metadata.
             - If they approved the plan as-is: Treat the current `<implementation_plan>` as ready for validation.

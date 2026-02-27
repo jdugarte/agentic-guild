@@ -52,7 +52,7 @@
         <action>
           The user has approved the implementation plan. 
           Verify the plan strictly conforms to classification rules (Bugfix MUST start with "Write a failing test", Refactor MUST start with "Run existing tests to establish a green baseline", Features MUST contain test-first steps) and conforms to `docs/core/SYSTEM_ARCHITECTURE.md`.
-          If it violates rules: automatically fix the plan in the file, and ask the user to confirm the fixed version (Loop back to 2.1).
+          If it violates rules: automatically fix the plan in the file, and ask the user to confirm the fixed version (Loop back to 2.1). (To prevent an infinite loop, if you have already attempted an automatic rewrite for this exact validation error before, STOP and ask the user to manually help fix the plan).
           If it is perfectly valid: Tell the user the spec is locked. Instruct the user to run the `start-task` skill to begin execution.
         </action>
         <yield>[PAUSE - DISCOVERY COMPLETE. HANDOFF TO START-TASK REQUIRED]</yield>
