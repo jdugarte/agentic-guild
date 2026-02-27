@@ -26,7 +26,7 @@
       <step id="1.1">
         <action>
           Read the git diff of the current branch against the default branch (e.g. `main`).
-          Read the "Docs to Sync" table in `docs/ai/EXPECTED_PROJECT_STRUCTURE.md` to get the list of docs and their update conditions.
+          Use the `view_file` tool to read the "Docs to Sync" table in `docs/ai/EXPECTED_PROJECT_STRUCTURE.md` to get the list of docs and their update conditions.
           For each doc in the list that exists in the project: determine whether the branch changes require updates based on the condition.
           Output a neat, conversational report: [Doc] → [Needs update: Yes/No] + brief reason. Ask the user if they'd like you to proceed with these updates.
         </action>
@@ -37,7 +37,7 @@
     <phase id="2" name="Schema Path Resolution">
       <step id="2.1">
         <action>
-          If SCHEMA_REFERENCE.md does NOT need update: [AUTO-TRANSITION TO 3.1]. Otherwise: Resolve the schema file path. Read `.cursorrules` and look for the `&lt;project_config&gt;` block, specifically "Schema path:".
+          If SCHEMA_REFERENCE.md does NOT need update: [AUTO-TRANSITION TO 3.1]. Otherwise: Resolve the schema file path. Use the `view_file` tool to read `.cursorrules` and look for the `&lt;project_config&gt;` block, specifically "Schema path:".
           - If filled in with a valid path: use it and [AUTO-TRANSITION TO 3.1].
           - If not filled in: Conversationally suggest the user fill in "Schema path:" in the `&lt;project_config&gt;` block of `.cursorrules` for future runs (see `docs/ai/EXPECTED_PROJECT_STRUCTURE.md` § 5.1). Infer the schema path from common locations (e.g. `db/schema.rb`, `prisma/schema.prisma`, `db/schema.ts`). Output your inferred path.
         </action>
@@ -58,7 +58,7 @@
       <step id="3.1">
         <action>
           For each doc that needs updates, apply the changes in a single batch using the `replace_file_content` or `write_to_file` tools:
-          - **SCHEMA_REFERENCE.md**: Use the schema path resolved in Phase 2 (or skip if user refused). Read the raw schema file, map to SPEC.md, generate/overwrite.
+          - **SCHEMA_REFERENCE.md**: Use the schema path resolved in Phase 2 (or skip if user refused). Use the `view_file` tool to read the raw schema file, map to SPEC.md, generate/overwrite.
           - **SPEC.md**: Update domain logic, entities, glossary, or REQ-IDs as implied by the diff.
           - **DATA_FLOW_MAP.md**: Update entity lifecycles or side-effects.
           - **ADRs/**: Add or update ADRs for new architectural decisions.

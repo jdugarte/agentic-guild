@@ -29,12 +29,12 @@
     <phase id="1" name="State Read">
       <step id="1.1">
         <action>
-          Read `.agentcore/current_state.md`, the active session file in `.agentcore/active_sessions/` (indicated by current state), the `<implementation_plan>` block inside that session file, `git status`, and `git diff` against the default branch (e.g. `main`).
+          Use the `view_file` tool to read `.agentcore/current_state.md`, the active session file in `.agentcore/active_sessions/` (indicated by current state), the `<implementation_plan>` block inside that session file, `git status`, and `git diff` against the default branch (e.g. `main`).
           If `docs/ROADMAP.md` exists: Count Done, In Progress, Pending, Backlog to get a sense of overall progress.
           Give the user a clear, helpful snapshot of where we currently are:
           1. Overall Progress: A pleasant, helpful summary of the active skill, phase, and roadmap progress.
           2. Current Step: What we are actively working on right now.
-          3. Blockers: Note any blockers (read from `.agentcore/blocker_log.md`) or failing tests we need to tackle.
+          3. Blockers: Note any blockers (use the `view_file` tool to read from `.agentcore/blocker_log.md`) or failing tests we need to tackle.
           4. Next Steps: Instead of a strict command, finish by asking them conversationally if they are ready to jump back into the current step and proceed.
         </action>
         <yield>[PAUSE - AWAIT CONFIRMATION TO RESUME OR TACTICAL COMMAND]</yield>

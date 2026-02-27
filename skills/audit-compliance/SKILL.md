@@ -26,7 +26,7 @@
       <step id="1.1">
         <action>
           Assume the persona of an Independent Auditor. You have no knowledge of the brainstorming process.
-          Read `docs/core/deterministic_coding_standards.md` to establish the strict rules.
+          Use the `view_file` tool to read `docs/core/deterministic_coding_standards.md` to establish the strict rules.
           Read the `git diff` of the branch against the default branch (e.g. `main`). Use the repository's default branch unless the project uses a different convention.
           Scan test files for `[REQ-ID]` traceability against `SPEC.md`.
           

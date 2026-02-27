@@ -25,7 +25,7 @@
   <workflow>
     <phase id="1" name="Interactive Local Review">
       <step id="1.1">
-        <action>Read and follow `.cursor/skills/code-review/SKILL.md` until it yields. Execute the full skill with its own PAUSEs; then return to finish-branch.</action>
+        <action>Use the `view_file` tool to read and follow `.cursor/skills/code-review/SKILL.md` until it yields. Execute the full skill with its own PAUSEs; then return to finish-branch.</action>
         <yield>[PAUSE - AWAIT CODE REVIEW COMPLETION]</yield>
       </step>
     </phase>
@@ -33,7 +33,7 @@
     <phase id="2" name="Compliance & Traceability Audit">
       <step id="2.1">
         <action>
-          Read `docs/core/deterministic_coding_standards.md`.
+          Use the `view_file` tool to read `docs/core/deterministic_coding_standards.md`.
           Analyze the branch to ensure no cyclomatic complexity or function length violations occurred.
           Scan all new tests for `[REQ-ID]` tags referencing `docs/core/SPEC.md`.
         </action>
@@ -68,15 +68,15 @@
 
     <phase id="4" name="Final Spackle & PR">
       <step id="4.1">
-        <action>Read and follow `.cursor/skills/sync-docs/SKILL.md` until it yields. The skill analyzes the branch diff and updates any docs that need changes.</action>
+        <action>Use the `view_file` tool to read and follow `.cursor/skills/sync-docs/SKILL.md` until it yields. The skill analyzes the branch diff and updates any docs that need changes.</action>
         <yield>[PAUSE - AWAIT CONFIRMATION TO PROCEED]</yield>
       </step>
       <step id="4.2">
-        <action>Read and follow `.cursor/skills/harvest-rules/SKILL.md` until it yields. Then return to finish-branch.</action>
+        <action>Use the `view_file` tool to read and follow `.cursor/skills/harvest-rules/SKILL.md` until it yields. Then return to finish-branch.</action>
         <yield>[PAUSE - AWAIT CONFIRMATION TO PROCEED]</yield>
       </step>
       <step id="4.3">
-        <action>Check if user-facing changes exist; if so, ensure `CHANGELOG.md` is updated. Read the active session file (if any) for `<roadmap_item>`. If this branch corresponds to a roadmap item, update `docs/ROADMAP.md`: move the item to Done, add today's date. If unclear, ask the user which roadmap item (if any) this branch completes. Then read and follow `.cursor/skills/pr-description/SKILL.md` until it yields. Remind the user to commit `docs/ROADMAP.md` if it was updated.</action>
+        <action>Check if user-facing changes exist; if so, ensure `CHANGELOG.md` is updated. Use the `view_file` tool to read the active session file (if any) for `<roadmap_item>`. If this branch corresponds to a roadmap item, update `docs/ROADMAP.md`: move the item to Done, add today's date. If unclear, ask the user which roadmap item (if any) this branch completes. Then use the `view_file` tool to read and follow `.cursor/skills/pr-description/SKILL.md` until it yields. Remind the user to commit `docs/ROADMAP.md` if it was updated.</action>
         <yield>[PAUSE - BRANCH IS FINISHED]</yield>
       </step>
     </phase>

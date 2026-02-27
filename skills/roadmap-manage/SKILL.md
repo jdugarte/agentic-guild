@@ -24,7 +24,7 @@
     <phase id="1" name="Manage Roadmap">
       <step id="1.1">
         <action>
-          Read `docs/ROADMAP.md`. Ask the user conversationally what they want to do: add an item, prioritize/reorder items, move an item (e.g. Pending → In Progress, or Done), catalog by phase/category, or something else.
+          Use the `view_file` tool to read `docs/ROADMAP.md`. Ask the user conversationally what they want to do: add an item, prioritize/reorder items, move an item (e.g. Pending → In Progress, or Done), catalog by phase/category, or something else.
         </action>
         <yield>[PAUSE - AWAIT USER INTENT]</yield>
       </step>

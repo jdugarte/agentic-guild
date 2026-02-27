@@ -26,7 +26,7 @@
     <phase id="1" name="Audit Execution">
       <step id="1.1">
         <action>
-          Read `docs/ai/code_review_prompt.md`.
+          Use the `view_file` tool to read `docs/ai/code_review_prompt.md`.
           Analyze the `git diff` of the current branch against the default branch (e.g. `main`). Use the repository's default branch unless the project uses a different convention.
           Format your output using strict hierarchical numbering (e.g., 1. Architecture, 1.1 Extract Service Object, 1.2 Fix N+1 Query, 2. Type Safety, 2.1 Add return type).
         </action>

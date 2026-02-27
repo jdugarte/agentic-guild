@@ -6,7 +6,7 @@
 
   <state_machine_directives>
     1. NEVER modify the roadmap during this skill.
-    2. Your ONLY job is to read and report.
+    2. Your ONLY job is to read (using the `view_file` tool) and report.
   </state_machine_directives>
 
   <persona>
@@ -23,7 +23,7 @@
     <phase id="1" name="Report">
       <step id="1.1">
         <action>
-          Read `docs/ROADMAP.md`. Output a helpful and conversational summary: count of items Done, In Progress, Pending, Backlog; list the top priorities; and optionally search/filter by the user's question (e.g. "what's blocking?", "what's next?", "show pending by priority").
+          Use the `view_file` tool to read `docs/ROADMAP.md`. Output a helpful and conversational summary: count of items Done, In Progress, Pending, Backlog; list the top priorities; and optionally search/filter by the user's question (e.g. "what's blocking?", "what's next?", "show pending by priority").
         </action>
         <yield>[PAUSE - ROADMAP CONSULT COMPLETE]</yield>
       </step>
