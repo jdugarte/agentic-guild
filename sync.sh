@@ -128,22 +128,26 @@ fi
 # 7. Git Hook Installation
 echo "⚓ Installing Git Hooks..."
 PRE_COMMIT_LOGIC=$(curl -s "$REPO_URL/templates/git-hooks/pre-commit-logic.sh")
-HOOK_FILE=".git/hooks/pre-commit"
-if [ -f "$HOOK_FILE" ]; then
-  if ! grep -q "AGENTCORE PRE-COMMIT" "$HOOK_FILE"; then
-    echo "   📝 Appending safety check to existing pre-commit hook..."
-    echo "$PRE_COMMIT_LOGIC" >> "$HOOK_FILE"
+if [ -n "$PRE_COMMIT_LOGIC" ]; then
+  HOOK_FILE=".git/hooks/pre-commit"
+  if [ -f "$HOOK_FILE" ]; then
+    if ! grep -q "AGENTCORE PRE-COMMIT" "$HOOK_FILE"; then
+      echo "   📝 Appending safety check to existing pre-commit hook..."
+      echo "$PRE_COMMIT_LOGIC" >> "$HOOK_FILE"
+    else
+      echo "   ✅ AgentCore pre-commit hook already present."
+    fi
   else
-    echo "   ✅ AgentCore pre-commit hook already present."
+    if [ -d ".git/hooks" ]; then
+      echo "   🆕 Creating new pre-commit hook..."
+      { echo "#!/bin/bash"; echo "$PRE_COMMIT_LOGIC"; } > "$HOOK_FILE"
+      chmod +x "$HOOK_FILE"
+    else
+      echo "   ⚠️  .git/hooks directory not found. Are you in the root of a git repository?"
+    fi
   fi
 else
-  if [ -d ".git/hooks" ]; then
-    echo "   🆕 Creating new pre-commit hook..."
-    { echo "#!/bin/bash"; echo "$PRE_COMMIT_LOGIC"; } > "$HOOK_FILE"
-    chmod +x "$HOOK_FILE"
-  else
-    echo "   ⚠️  .git/hooks directory not found. Are you in the root of a git repository?"
-  fi
+  echo "   ⚠️  Failed to fetch pre-commit hook logic. Skipping git hook installation."
 fi
 
 # Cleanup
