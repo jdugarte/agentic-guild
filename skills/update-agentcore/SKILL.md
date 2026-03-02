@@ -45,10 +45,7 @@
           - `docs/{ai,core,features,audit,guides}` and `docs/core/ADRs`
           - `.github`
 
-          Remove obsolete or renamed skill directories that no longer exist in the AgentCore framework. Currently known obsolete dirs:
-          - `.cursor/skills/sync-schema-docs`
-          - `.cursor/skills/pr-description-clipboard`
-          For each obsolete dir, if it exists locally, delete it and notify the user conversationally (e.g., "Cleaned up the old `sync-schema-docs` skill, which has been renamed.").
+          Read the **Sync Registry** from `.agentcore/tmp_update/playbooks/SYNC_REGISTRY.md` (already available from Phase 0). Parse the `OBSOLETE_SKILLS [START]` / `OBSOLETE_SKILLS [END]` section to get the list of paths to remove. For each path in that list, if the directory exists locally, delete it and notify the user conversationally (e.g., "Cleaned up the old `sync-schema-docs` skill, which has been renamed.").
         </action>
         <yield>[AUTO-TRANSITION TO 1.2]</yield>
       </step>
