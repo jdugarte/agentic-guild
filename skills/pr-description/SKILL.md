@@ -21,6 +21,13 @@
     <action>If they are missing, pause our work and gently let the user know we need these files to start. Offer to gracefully initialize the project templates for them. If the user says yes, run sync.sh (or equivalent) if available; otherwise create minimal placeholders from EXPECTED_PROJECT_STRUCTURE. Do NOT hallucinate contents without user confirmation.</action>
   </pre_flight>
 
+  <hard_constraints>
+    1. Do NOT use markdown link syntax for any file references in the PR description. IDEs convert local paths into broken `cci:7://file:///` hyperlinks that are useless when pasted into GitHub.
+    2. For files that exist in the repo: use plain backtick code formatting only — e.g. `docs/core/SYSTEM_ARCHITECTURE.md`.
+    3. For deleted or renamed files: use backtick formatting only — never link syntax.
+    4. NEVER write a file reference as `[text](path)`. Backtick code formatting ONLY, always.
+  </hard_constraints>
+
   <workflow>
     <phase id="1" name="Context & Drafting">
       <step id="1.1">
