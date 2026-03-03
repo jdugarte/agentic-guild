@@ -39,24 +39,30 @@
       <step id="2.1">
         <action>
           Use the `view_file` tool to read `docs/core/deterministic_coding_standards.md`.
-          Analyze the branch to ensure no cyclomatic complexity or function length violations occurred.
-          Scan all new tests for `[REQ-ID]` tags referencing `docs/core/SPEC.md`.
+          Analyze the branch diff to check for:
+          1. **Complexity & Length**: Cyclomatic complexity > 10 or functions > 60 lines.
+          2. **Traceability**: New test blocks missing `[REQ-ID]` tags referencing `docs/core/SPEC.md`.
+          3. **Domain Primitives (CbC)**: New or modified code using raw primitive types (String, Integer, raw object/hash) for domain concepts — any value with business meaning such as identifiers, contact data, measurements, or status enums. These should be Value Objects (Ruby) or Branded Types (TypeScript).
         </action>
         <yield>
           [PAUSE - REPORT FINDINGS]
-          Conversationally present the findings of the audit. Explicitly ask the user if they want you to fix any missing `[REQ-ID]` tags or complexity violations before proceeding.
+          Conversationally present the findings of the audit across all three checks. Explicitly ask the user if they want you to fix any violations — missing `[REQ-ID]` tags, complexity issues, or domain primitive usages — before proceeding.
           AWAIT COMMAND TO FIX OR PROCEED.
         </yield>
       </step>
       <step id="2.2">
         <action>
-          If the user requested fixes in Step 2.1, implement the necessary changes to fix complexity violations and add missing `[REQ-ID]` tags to the tests.
-          Run local tests to verify the changes.
+          If the user requested fixes in Step 2.1, implement the necessary changes:
+          - Add missing `[REQ-ID]` tags to test blocks.
+          - Refactor functions exceeding 60 lines or cyclomatic complexity > 10.
+          - Wrap domain concepts in Value Objects (Ruby) or Branded Types (TypeScript) to replace raw primitive usage.
+          Run local tests to verify all changes pass.
         </action>
         <yield>
           [PAUSE - AWAIT COMMAND]
-          If fixes were applied: Inform the user that the compliance and traceability fixes have been applied. Ask if they want to review the changes or proceed to the next phase.
-          If no fixes were requested: Acknowledge that no fixes were needed, and ask if they are ready to proceed to the next phase.
+          If fixes were applied: Inform the user that all compliance and CbC fixes have been applied. Ask if they want to review the changes or proceed to the next phase.
+          If the user declined to fix reported violations: Acknowledge their choice and note which violations remain outstanding. Ask if they are ready to proceed to the next phase.
+          If no violations were found: Confirm the audit is clean and ask if they are ready to proceed to the next phase.
         </yield>
       </step>
     </phase>

@@ -4,14 +4,15 @@ Date: 2026-02-20
 ## Core AI Commands & Skills
 
 ### 1. Start Task
-**Goal**: Safely begin working on a new feature, enforcing design and discovery before coding.
+**Goal**: Safely begin working on a new feature, enforcing design and discovery before coding. Enforces Correct-by-Construction (CbC) throughout the execution phase.
 **Workflow Steps**:
 1. **Task description first**: Check if the user's message already contains a task description. If yes, try to match it to a roadmap item and confirm. If no description, show the roadmap (if present) and ask the user to pick one or describe a new task.
 2. **Discovery Q&A**: Interactively gather the context of the feature from the user.
-2. **Planning & Constraints**: Draft a detailed, hierarchical implementation plan directly inside the active session memory, anchored to the system architecture.
-3. **Architectural Shifts (ADRs)**: Flag and document significant changes.
-4. **Schema Mapping**: Map any database changes.
-5. **Execution**: Loop through a strict, iterative TDD process step-by-step to prevent huge code dumps.
+3. **Planning & Constraints**: Draft a detailed, hierarchical implementation plan directly inside the active session memory, anchored to the system architecture.
+4. **Architectural Shifts (ADRs)**: Flag and document significant changes.
+5. **Schema Mapping**: Map any database changes.
+6. **Type Definition Gate (Features only)**: Before writing any tests, define all domain types — Value Objects (Ruby) or Branded Types (TypeScript). No raw primitive types for domain concepts. Awaits explicit user approval.
+7. **Execution**: Loop through a strict CbC+TDD cycle step-by-step: write failing test using approved types → apply CbC generation constraints → run `<reflection>` self-critique gate → write minimum implementation → pass test.
 
 ### 2. Finish Branch
 **Goal**: Safely finalize a branch before opening a PR, ensuring all tests pass and docs are up-to-date.

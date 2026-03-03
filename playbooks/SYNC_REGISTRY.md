@@ -52,6 +52,7 @@ This file is the **single source of truth** for all file mappings between the Ag
 | templates/core/memory_scaffold/blocker_log.md | .agentcore/blocker_log.md | init |
 | templates/core/memory_scaffold/pending_refactors.md | .agentcore/pending_refactors.md | init |
 | templates/core/memory_scaffold/task_template.md | .agentcore/active_sessions/task_template.md | init |
+| templates/CbC_GENERATION_PROMPT.md | .cursor/templates/CbC_GENERATION_PROMPT.md | merge |
 <!-- SYNC_REGISTRY [END] -->
 
 ---

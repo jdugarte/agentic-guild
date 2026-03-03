@@ -29,18 +29,22 @@
           Use the `view_file` tool to read `docs/core/deterministic_coding_standards.md` to establish the strict rules.
           Read the `git diff` of the branch against the default branch (e.g. `main`). Use the repository's default branch unless the project uses a different convention.
           Scan test files for `[REQ-ID]` traceability against `SPEC.md`.
+          Scan all new or modified files for domain concepts represented as raw primitive types (String, Integer, raw object/hash). A "domain concept" is any value with business meaning: identifiers (user ID, order ID), contact data (email, phone), measurements (age, quantity, price/currency), or status enums. Flag any that should be a Value Object (Ruby) or Branded Type (TypeScript).
           
           Generate a strict Compliance Report using the exact format specified below:
           
           > ### 🕵️‍♂️ Compliance Audit Report
           > 
           > **Deterministic Standards:**
-          > - [PASS/FAIL] `filename.ts:L#` - [Reason based on standards doc]
+          > - [PASS/FAIL] `filename:L#` - [Reason based on standards doc]
           > 
           > **Traceability:**
           > - [PASS/WARN] `[REQ-ID]` - [Coverage status]
+          >
+          > **Domain Primitives (CbC):**
+          > - [PASS/FAIL] `filename:L#` - `variable_or_param_name` is a raw [String/Integer/Object] — should be a Value Object (Ruby) or Branded Type (TypeScript) (e.g., `EmailAddress`, `UserId`, `MoneyAmount`).
 
-          If any [FAIL] or [WARN] exists, you MUST propose a refactoring solution.
+          If any [FAIL] or [WARN] exists across any section, you MUST propose a refactoring solution.
         </action>
         <yield>[PAUSE - AWAIT USER COMMAND TO REFACTOR VIOLATIONS OR EXIT]</yield>
       </step>
