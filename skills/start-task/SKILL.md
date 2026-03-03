@@ -61,7 +61,7 @@
       <step id="2.1">
         <action>
           First, check if `.agentcore/current_state.md` points to an active session file (e.g., passed over from `explore-task`).
-          - If it points to an active session file: Verify the file actually exists before reading it using the `view_file` tool. If the file exists and already contains a populated `<implementation_plan>` block, acknowledge the spec is locked and [AUTO-TRANSITION TO 3.1]. If it exists but the plan is empty/missing, proceed with the drafting steps below.
+          - If it points to an active session file: Verify the file actually exists before reading it using the `view_file` tool. If the file exists and already contains a populated `<implementation_plan>` block, acknowledge the spec is locked and [AUTO-TRANSITION TO 3.0]. If it exists but the plan is empty/missing, proceed with the drafting steps below.
           - If no active session is pointed to, or the file is missing: Derive `[name]` as a short, kebab-case slug from the task description and silently create a new session file in `.agentcore/active_sessions/` named `task_[name].md` using the `write_to_file` tool. If the task came from the roadmap, include `<roadmap_item>` in the session metadata. Silently update `.agentcore/current_state.md` to point to this new file. Write the task classification and description into the session file.
           Drafting the plan (only if no plan exists yet): You MUST use the `replace_file_content` tool to draft the step-by-step implementation plan directly inside the `<implementation_plan>` block of the `task_[name].md` file ON DISK. Use `<step id="N" status="pending">[Description]</step>` format.
           VERIFICATION LOCK: Before asking for user approval, you MUST verify the file `task_[name].md` was successfully updated on the filesystem. Before responding to the user, you MUST explicitly state in your response that the file was successfully updated on disk. Do not present the plan if the file does not exist.
@@ -85,16 +85,19 @@
           3. Finalize: 
             - If the plan fails validation (or is empty): Automatically rewrite the plan in the session file to fix the violation, and present this corrected plan to the user for confirmation. (To prevent an infinite loop, if you have already attempted an automatic rewrite for this validation error before, STOP and ask the user to manually help fix the plan).
             - If the user suggested tweaks AND the plan passes validation: Ask them to confirm the updated plan.
-            - If the user approved the plan as-is AND it passes validation: [AUTO-TRANSITION TO 3.1].
+            - If the user approved the plan as-is AND it passes validation: [AUTO-TRANSITION TO 3.0].
         </action>
-        <yield>[PAUSE - AWAIT PLAN APPROVAL OR AUTO-TRANSITION TO 3.1]</yield>
+        <yield>[PAUSE - AWAIT PLAN APPROVAL OR AUTO-TRANSITION TO 3.0]</yield>
       </step>
     </phase>
 
     <phase id="3" name="Execution (Iterative TDD)">
       <step id="3.0">
         <action>
-          TYPE DEFINITION GATE — Run this step ONCE at the start of Phase 3, and ONLY if the task classification is "Feature". Skip entirely for Bugfix, Refactor, and Chore.
+          TYPE DEFINITION GATE — Run this step ONCE at the start of Phase 3.
+          First, check the task classification from the active session file:
+          - If classification is Bugfix, Refactor, or Chore: Domain types already exist or are not relevant to this task. [AUTO-TRANSITION TO 3.1] immediately. Do not ask the user anything.
+          - If classification is Feature: Continue with the steps below.
           Use the `view_file` tool to read the active session file. Check if a `## Domain Model` section already exists (populated by `explore-task`).
           - If a Domain Model section exists: Present the already-defined Value Objects / Branded Types to the user for confirmation. Ask if they want to add, rename, or remove any types before we begin writing tests.
           - If no Domain Model section exists: Analyze the implementation plan steps and derive the domain types this feature introduces. For each domain concept that would otherwise be a raw primitive (String, Integer, etc.), propose the appropriate wrapper type:
@@ -104,7 +107,7 @@
           Once the user approves the types: Use the `replace_file_content` tool to write or update the `## Domain Model` section in the session file with the approved types. Confirm the file was updated, then [AUTO-TRANSITION TO 3.1].
           NOTE: Do NOT write any application code or tests in this step. The only output is the type proposal and the session file update.
         </action>
-        <yield>[PAUSE - AWAIT TYPE DEFINITION APPROVAL]</yield>
+        <yield>[PAUSE - AWAIT TYPE DEFINITION APPROVAL (Feature tasks only — all others auto-transition)]</yield>
       </step>
       <step id="3.1">
         <action>
@@ -118,7 +121,7 @@
       </step>
       <step id="3.2">
         <action>
-          Use the `view_file` tool to read `templates/CbC_GENERATION_PROMPT.md`.
+          Use the `view_file` tool to read `.cursor/templates/CbC_GENERATION_PROMPT.md`.
           Before writing any implementation code, apply the CbC generation protocol:
           1. Fill the `<context>` block with the relevant REQ-ID from `docs/core/SPEC.md` and the current step description from the active session file.
           2. Apply all `<constraints>` from the template to your generation:
@@ -127,7 +130,8 @@
              - Pre-condition and Post-condition assertions on all data mutations and service calls.
              - No raw primitive types for domain concepts — use Value Objects (Ruby) or Branded Types (TypeScript).
              - Cyclomatic complexity ≤ 10.
-          3. REFLECTION GATE: Before outputting the code, you MUST silently execute the `<reflection>` step from the template — critique your own proposed implementation against each constraint. If any violation is found, fix the code first. Only then output the final implementation.
+             - Every new public method must be traceable to a REQ-ID from `docs/core/SPEC.md`.
+          3. REFLECTION GATE: Before outputting the code, you MUST execute the `<reflection>` step from the template — critique your own proposed implementation against each constraint. If any violation is found, fix the code first. Follow the `<output_format>` rule in the template: show the reflection block only if violations were found and corrected. If everything passes, output only the corrected code with no reflection commentary.
           Write the minimum application code required to make the failing test pass.
           Ensure you do not violate `docs/core/SYSTEM_ARCHITECTURE.md`.
           Run the project's linters/checkers. If `docs/ai/code_review_prompt.md` exists, use the `view_file` tool to read it for project-specific commands (e.g. Quality or Pre-Flight section); otherwise run the project's standard linters.

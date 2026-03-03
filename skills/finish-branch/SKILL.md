@@ -61,7 +61,8 @@
         <yield>
           [PAUSE - AWAIT COMMAND]
           If fixes were applied: Inform the user that all compliance and CbC fixes have been applied. Ask if they want to review the changes or proceed to the next phase.
-          If no fixes were requested: Acknowledge that no violations were found, and ask if they are ready to proceed to the next phase.
+          If the user declined to fix reported violations: Acknowledge their choice and note which violations remain outstanding. Ask if they are ready to proceed to the next phase.
+          If no violations were found: Confirm the audit is clean and ask if they are ready to proceed to the next phase.
         </yield>
       </step>
     </phase>

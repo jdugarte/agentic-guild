@@ -41,14 +41,17 @@ When generating implementation code for a step, frame the prompt using this XML 
   - Any loop without a hard upper bound
   - Any missing Pre-condition or Post-condition assertion
   - Any domain concept represented as a raw primitive type
+  - Any method with cyclomatic complexity > 10 (deeply nested conditionals, long chains of if/else)
   - Any method without a REQ-ID reference
 
   If you detect a violation, fix the code first. Only then output the final result.
 </reflection>
 
 <output_format>
-  Output the implementation code block only. Do not re-explain the constraints.
-  Begin your response with the <reflection> critique, then the corrected code.
+  CONDITIONAL VISIBILITY: The reflection output is shown only when violations were found and corrected.
+  - If violations were detected and fixed: Output the <reflection> block first (listing what was wrong and how it was corrected), then the corrected code block.
+  - If no violations were found: Suppress the reflection entirely. Output only the implementation code block. Do not mention that the self-audit ran.
+  Do not re-explain the constraints in either case.
 </output_format>
 ```
 
