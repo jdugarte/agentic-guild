@@ -46,8 +46,12 @@
           1. Converse: Answer questions, propose architectural solutions, or ask clarifying questions to nail down edge cases.
           2. Update Memory: If this is the first exchange and `task_[name].md` hasn't been created, derive the name, create the file using the `write_to_file` tool, and update `.agentcore/current_state.md`. You MUST use the `replace_file_content` tool to update the active memory file to reflect any new decisions, requirements, or constraints agreed upon in this exchange. 
              - If a major pivot occurs (e.g. "let's not use Redis"), move the old plan to `task_[name]_history.md` so the active file stays clean.
-          3. Evaluate Readiness: Ask the user if the spec feels complete or if we need to explore further. If they say it is complete and ready to build: use the `replace_file_content` tool to update the memory file by inserting the strict `<implementation_plan>` block at the bottom (mandating TDD), ensure that before responding to the user, you explicitly state in your response that the file was successfully updated on disk, and [AUTO-TRANSITION TO 2.1].
-          4. If not ready: Loop back to 1.1 mentally to continue the conversation.
+          3. Domain Model (CbC): As domain entities and their data requirements become clear during the conversation, maintain a `## Domain Model` section in the memory file. For each entity introduced, document:
+             - **Entity name** and its core responsibility
+             - **Invariants**: truths that must always hold (e.g. "an Order must always have at least one line item")
+             - **Value Objects / Branded Types**: domain concepts that must NOT be raw primitives — list the type name and what it wraps (e.g. `EmailAddress` wraps String with format validation, `OrderId` wraps Integer, `MoneyAmount` wraps a value+currency pair). If the task is a Feature, this section MUST be populated before the implementation plan is finalized.
+          4. Evaluate Readiness: Ask the user if the spec feels complete or if we need to explore further. If they say it is complete and ready to build: use the `replace_file_content` tool to update the memory file by inserting the strict `<implementation_plan>` block at the bottom (mandating TDD), ensure that before responding to the user, you explicitly state in your response that the file was successfully updated on disk, and [AUTO-TRANSITION TO 2.1].
+          5. If not ready: Loop back to 1.1 mentally to continue the conversation.
         </action>
         <yield>[PAUSE - AWAIT USER FEEDBACK OR APPROVAL TO FINALIZE SPEC]</yield>
       </step>

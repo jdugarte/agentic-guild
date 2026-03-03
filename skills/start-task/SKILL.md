@@ -92,11 +92,26 @@
     </phase>
 
     <phase id="3" name="Execution (Iterative TDD)">
+      <step id="3.0">
+        <action>
+          TYPE DEFINITION GATE — Run this step ONCE at the start of Phase 3, and ONLY if the task classification is "Feature". Skip entirely for Bugfix, Refactor, and Chore.
+          Use the `view_file` tool to read the active session file. Check if a `## Domain Model` section already exists (populated by `explore-task`).
+          - If a Domain Model section exists: Present the already-defined Value Objects / Branded Types to the user for confirmation. Ask if they want to add, rename, or remove any types before we begin writing tests.
+          - If no Domain Model section exists: Analyze the implementation plan steps and derive the domain types this feature introduces. For each domain concept that would otherwise be a raw primitive (String, Integer, etc.), propose the appropriate wrapper type:
+            - Ruby: propose Value Object classes with validation in the initializer.
+            - TypeScript: propose Branded Types (e.g. `type UserId = string & { readonly __brand: 'UserId' }`).
+            Present the proposed types to the user and ask for approval or modifications.
+          Once the user approves the types: Use the `replace_file_content` tool to write or update the `## Domain Model` section in the session file with the approved types. Confirm the file was updated, then [AUTO-TRANSITION TO 3.1].
+          NOTE: Do NOT write any application code or tests in this step. The only output is the type proposal and the session file update.
+        </action>
+        <yield>[PAUSE - AWAIT TYPE DEFINITION APPROVAL]</yield>
+      </step>
       <step id="3.1">
         <action>
           You MUST use the `view_file` tool to physically read the `.agentcore/active_sessions/task_[name].md` file from disk. Do NOT rely on memory. Find the next step with `status="pending"`.
           Write the failing test for this step only.
           Tag the test with the appropriate [REQ-ID] from `docs/core/SPEC.md` (format: `REQ-[DOMAIN]-[NNN]`, e.g. `REQ-AUTH-001`; projects may customize).
+          If the test involves a domain concept, use the Value Objects / Branded Types approved in Step 3.0 — never raw primitives.
           Show the user the failing test and ask if they're ready to proceed and make it pass.
         </action>
         <yield>[PAUSE - AWAIT TEST APPROVAL]</yield>

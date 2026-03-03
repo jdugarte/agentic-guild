@@ -35,12 +35,17 @@
           > ### 🕵️‍♂️ Compliance Audit Report
           > 
           > **Deterministic Standards:**
-          > - [PASS/FAIL] `filename.ts:L#` - [Reason based on standards doc]
+          > - [PASS/FAIL] `filename:L#` - [Reason based on standards doc]
           > 
           > **Traceability:**
           > - [PASS/WARN] `[REQ-ID]` - [Coverage status]
+          >
+          > **Domain Primitives (CbC):**
+          > Scan all new or modified files for domain concepts represented as raw primitive types (String, Integer, raw object/hash).
+          > A "domain concept" is any value with business meaning: identifiers (user ID, order ID), contact data (email, phone), measurements (age, quantity, price/currency), or status enums.
+          > - [PASS/FAIL] `filename:L#` - `variable_or_param_name` is a raw [String/Integer/Object] — should be a Value Object (Ruby) or Branded Type (TypeScript) (e.g., `EmailAddress`, `UserId`, `MoneyAmount`).
 
-          If any [FAIL] or [WARN] exists, you MUST propose a refactoring solution.
+          If any [FAIL] or [WARN] exists across any section, you MUST propose a refactoring solution.
         </action>
         <yield>[PAUSE - AWAIT USER COMMAND TO REFACTOR VIOLATIONS OR EXIT]</yield>
       </step>
