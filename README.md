@@ -1,4 +1,9 @@
-# agentic:guild: Engineering-Grade AI Development
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/logo-white-bg.png">
+  <img src="assets/logo-transparent-bg.png" alt="agentic:guild" width="420">
+</picture>
+
+# Engineering-Grade AI Development
 
 [![Status: Active](https://img.shields.io/badge/Status-Active-success.svg)](https://github.com/jdugarte/agentic-guild)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
