@@ -1,78 +1,198 @@
-# 🧠 AgentCore: The AI Developer Operating System
+# 🧠 AgentCore: Engineering-Grade AI Development
 
-[![Status: Active](https://img.shields.io/badge/Status-Active-success.svg)]()
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)]()
+[![Status: Active](https://img.shields.io/badge/Status-Active-success.svg)](https://github.com/jdugarte/AgentCore)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-AgentCore is a meta-tooling framework designed to centralize, standardize, and harden AI-assisted developer workflows. 
+> *Stop vibe coding. Start engineering.*
 
-Modern AI coding assistants (like Cursor, GitHub Copilot, or Aider) are fundamentally "eager completion engines." If left unconstrained, they hallucinate workflows, bypass architectural boundaries, and suffer from "context amnesia" during long tasks. 
+AgentCore is a meta-framework that turns your AI coding assistant into a **disciplined software engineer** — one that follows the strict practices, processes, and documentation standards we've always known mattered, but rarely enforced.
 
-AgentCore solves this by acting as a **Local Operating System** that forces AI agents to operate as strict, step-by-step state machines with transient memory and hard execution gateways.
+---
 
-## ✨ The Core Philosophy: Determinism Over Speed
+## The problem with AI-assisted development today
 
-AgentCore separates the **way we work** (SOPs) from the **tech we use** (Stack Specifics). It injects three critical layers into your local project:
+Left to their own devices, AI coding assistants are **eager completion engines**. They will:
 
-1. **The Engine (XML State Machines):** Universal skills are written in strict XML. The AI is programmed to hit hard `[PAUSE]` gateways, forcing it to stop generating text and wait for human authorization before proceeding to the next step.
-2. **The RAM (Transient Memory):** AgentCore initializes a git-ignored `.agentcore/` directory. The AI uses this to track active sessions, log blockers, and resume tasks precisely where it left off, surviving conversational tangents and context window limits.
-3. **The Constitution (Project Governance):** Agnostic templates (`SYSTEM_ARCHITECTURE.md`, `SPEC.md`, `deterministic_coding_standards.md`) anchor the AI. `SPEC.md` defines domain entities, workflows, and the REQ-ID traceability format (`REQ-[DOMAIN]-[NNN]`, e.g. `REQ-AUTH-001`). If you ask the AI to use a forbidden library, it will reject the request and demand an Architectural Decision Record (ADR).
+- Jump to solutions before understanding the problem
+- Silently bypass architecture boundaries they don't know about
+- Forget everything you agreed on three conversations ago
+- Generate code that *looks* right but violates your own rules
 
-## 📦 What's Included
+The result is **vibe coding** — fast, messy, inconsistent, and increasingly difficult to maintain. You get output, but not engineering.
 
-### Universal AI Skills (The Engine)
-Located in `.cursor/skills/`, these tech-agnostic workflows orchestrate the development lifecycle:
-* **`start-task`**: The Discovery, Planning, and TDD Loop engine. Creates session files with deterministic kebab-case names (e.g. `task_add-export.md`). Enforces Correct-by-Construction (CbC).
-* **`finish-branch`**: Orchestrates local code review, High-Reliability Engineering (HRE) compliance audits, and PR preparation.
-* **`code-review`**: Runs project-specific static analysis and formats actionable, numbered fixes.
-* **`audit-compliance`**: An Independent Verification (IV&V) agent that mathematically checks code determinism.
-* **`status-check`**: The GPS. Reads the `.agentcore/` memory folder to diagnose blockers and rehydrate context.
-* **`harvest-rules`**: Scans Git diffs to extract new architectural patterns and map them to living documentation. Filters proposals against `SYSTEM_ARCHITECTURE.md` and `.cursorrules` to prevent duplication.
-* **`sync-docs`**: Keeps project docs in sync with branch changes (SPEC, SCHEMA_REFERENCE, DATA_FLOW_MAP, ADRs, etc.).
-* **`pr-description`**: Outputs a Git-history-based PR description in a code block for the user to copy.
-* **`roadmap-manage`**: Add, prioritize, and catalog items in `docs/ROADMAP.md`.
-* **`roadmap-consult`**: Read-only view of roadmap status (done, pending, priorities).
+---
 
-### Universal Playbooks & Templates
-* **`AI_DEVELOPER_PROTOCOL.md`**: A 6-phase masterclass playbook to audit, clean, and refine documentation in any legacy project.
-* **Governance Templates**: Starter files for `DATA_FLOW_MAP.md`, `ROADMAP.md`, `TESTING_STRATEGY_MATRIX.md`, and enterprise-grade coding standards. AgentCore standardizes on `ROADMAP.md` for project planning.
-* **Stack Configurations**: Pre-configured `.cursorrules` and code review prompts for Rails, Django, and React Native.
+## What AgentCore does
 
-## 🚀 Getting Started
+AgentCore injects a **software engineering operating system** into your project. It gives your AI agent:
 
-You can inject the AgentCore OS into any existing or new project using the provided synchronization script.
+- 📋 **A process to follow** — step-by-step workflows it cannot skip or shortcut
+- 🧠 **A memory** — a git-ignored local state it uses to resume tasks exactly where they left off
+- 📐 **A constitution** — architecture and spec documents it must consult and obey before touching your code
+- 🚦 **Hard stops** — mandatory human approval gates before any destructive or irreversible action
+- 🔍 **A code review standard** — not stylistic suggestions, but numbered, actionable, engineering-grade feedback
 
-1. Navigate to your target project's root directory.
-2. Run the sync script pointing to the AgentCore repository:
+The AI doesn't just help you type faster. It **becomes a team member with a job description**.
 
-    ```bash
-    curl -s https://raw.githubusercontent.com/jdugarte/AgentCore/main/sync.sh | bash
-    ```
+---
 
-3. The script will automatically:
-* Build the `.agentcore/` memory scaffold and secure it in `.gitignore`.
-* Download the Universal XML Skills into `.cursor/skills/`.
-* Initialize missing Governance templates in `docs/core/`.
-* Inject the `AGENT_CORE_RULES.md` router into your project's `.cursorrules`.
-* Skills that require `SPEC.md` or `SYSTEM_ARCHITECTURE.md` will offer to initialize them (via sync.sh or minimal placeholders) if missing, instead of aborting.
-4. Copy the specific stack templates (e.g., Rails, React Native) from the AgentCore repo into your project to provide the "Fuel" for the OS.
+## The process is the product
 
-## 🗺️ Roadmap
+Most tools optimize for output. AgentCore optimizes for the **process that generates output**.
 
-AgentCore is actively evolving to support larger teams and deeper automation. The following features are currently in development or proposed:
+Code is not the end goal — it's a byproduct. What actually matters is whether the decisions that produced it were sound: whether requirements were understood, architecture was respected, trade-offs were considered, and the reasoning was documented for the next developer — human or AI — who has to work with it. As the engineers who built the Space Shuttle's flight software put it: [the most important creation is not the software — it's the process that produces it](https://david-haber.github.io/posts/the-right-stuff/).
 
-* [ ] **The `ai-tools` Go CLI:** Replacing `sync.sh` with a compiled, zero-dependency Go binary distributed via Homebrew for robust versioning and multi-project synchronization.
-* [ ] **Localization Bridge:** "English for Rules, Local for Output." Allowing teams to configure the AI to communicate and generate specs in their native language while maintaining English code logic.
-* [ ] **Deep CI Integration:** Moving async holding patterns (like the BugBot loop) from local execution directly into GitHub Actions via API.
-* [ ] **Skill Versioning:** Allowing enterprise projects to pin their `.cursor/skills/` to specific AgentCore release versions.
-* [ ] **Visual Workflow Builder:** A GUI tool to generate the strict XML state-machine `SKILL.md` files without writing XML by hand.
-* [ ] **Central Config (agent_core.yml):** Optional project config file for schema path, default branch, and other options. See [specs/proposals/AGENT_CORE_CONFIG_SPEC.md](specs/proposals/AGENT_CORE_CONFIG_SPEC.md).
+But here's what makes AgentCore different from a static rulebook: **the process improves as the project grows.**
 
-## 🤝 Contributing
+Every time a task completes, AgentCore's `harvest-rules` skill scans what was actually built — the Git diff, the solutions that emerged, the patterns that held up — and evaluates them against your existing standards. Where they represent genuine new knowledge, it proposes additions to your living architecture documents. The rules that guide tomorrow's decisions are informed by the experience of today's.
 
-We welcome contributions! If you have developed a stack-agnostic AI skill, or have improvements to the High-Reliability Engineering (HRE) constraints, please submit a PR.
+The result is a system that doesn't just enforce good practices. It **accumulates them** — each task raising the baseline for the next, generating certainty rather than just output.
 
-Ensure any proposed workflows strictly follow the XML state-machine format and utilize the `[PAUSE]` gateway methodology.
+---
 
-## 📄 License
+## Who is this for?
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+AgentCore is for developers and technical leads who:
+
+- Are tired of AI assistants that confidently do the wrong thing
+- Want their AI to reason about architecture, not just autocomplete
+- Are building something complex enough that documentation, traceability, and standards actually matter
+- Want to delegate entire development tasks to an AI — with confidence the output will hold up to review
+
+If you've ever thought *"I need this AI to follow the same rules my team follows"* — that's exactly what AgentCore is for.
+
+---
+
+## How it transforms your workflow
+
+### Before AgentCore
+- You describe a feature, the AI codes it, you review, it breaks something, you fix it, repeat.
+- Documentation drifts from reality.
+- Architecture rules exist in your head, not in your project.
+- Every new conversation starts from scratch.
+
+### After AgentCore
+- The AI **classifies** every task before it touches anything.
+- It **writes a traceable implementation plan** you approve before the first line of code changes.
+- It uses **Test-Driven Development** by default, enforced by a Correct-by-Construction gate.
+- It **audits its own output** against your architectural standards before delivering it.
+- It **never commits or pushes** without your explicit instruction.
+- Every requirement gets a **REQ-ID traceability tag** (`REQ-AUTH-001`), creating an audit trail from spec to code.
+- Your documentation **stays in sync** with your code, automatically.
+
+---
+
+## The core skills (what your AI can now do)
+
+Once AgentCore is installed, your AI assistant gains a suite of structured, stateful workflows:
+
+| Skill | What It Does |
+|---|---|
+| `start-task` | Full task lifecycle: classify → plan → TDD loop → CbC gate. Never starts coding without a plan you've approved. |
+| `explore-task` | Deep discovery for new features or ambiguous work. Explores options, surfaces trade-offs, and documents findings before any commitment. |
+| `finish-branch` | Runs local code review, HRE compliance audit, and prepares a structured PR — in sequence, with gates between each phase. |
+| `code-review` | Project-aware static analysis that produces numbered, actionable fixes — not generic advice. |
+| `audit-compliance` | An independent verification pass. Checks code determinism, REQ-ID traceability, and HRE compliance mathematically. |
+| `status-check` | The GPS. Reads persistent memory to diagnose exactly where a task is blocked and fully rehydrates context. |
+| `harvest-rules` | Scans Git diffs to extract new architectural patterns and maps them to living documentation. The AI learns from its own work — rules improve as the project grows. |
+| `sync-docs` | Keeps SPEC, DATA_FLOW_MAP, ADRs, and schema references synchronized with every branch change. |
+| `roadmap-manage` | Add, prioritize, and track features and bugs in a structured `ROADMAP.md`. |
+| `pr-description` | Generates a complete, Git-history-based PR description for you to review and submit. |
+
+---
+
+## Getting Started
+
+AgentCore syncs into any existing or new project in seconds.
+
+### 1. Run the sync script from your project root
+
+```bash
+curl -s https://raw.githubusercontent.com/jdugarte/AgentCore/main/sync.sh | bash
+```
+
+The script will:
+- Create a git-ignored `.agentcore/` memory directory for AI task state
+- Install all skills into `.cursor/skills/`
+- Initialize governance templates in `docs/core/` if they don't exist
+- Inject the AgentCore rules router into your `.cursorrules`
+
+### 2. Initialize your project's constitution
+
+AgentCore works best when your project has two anchor documents. If they don't exist, the sync script will help you create starters:
+
+- **`docs/core/SPEC.md`** — your domain entities, workflows, and REQ-ID definitions
+- **`docs/core/SYSTEM_ARCHITECTURE.md`** — your stack, boundaries, forbidden libraries, and ADRs
+
+These are the documents your AI will be required to consult and obey. Think of them as the rules your new engineer had to read before their first PR.
+
+### 3. Start working with structure
+
+Once installed, you trigger skills through your AI assistant naturally:
+
+```
+"Let's start this task"        → triggers start-task
+"Let's explore this feature"   → triggers explore-task
+"Let's finish this branch"     → triggers finish-branch
+"What's the status?"           → triggers status-check
+```
+
+The AI handles the rest — structured, gated, auditable.
+
+---
+
+## The engineering standards AgentCore enforces
+
+AgentCore ships with battle-tested templates for the standards that improve code quality and maintainability:
+
+- **Deterministic Coding Standards** — rules that eliminate ambiguity in how code behaves
+- **REQ-ID Traceability** — every requirement tagged, every implementation linked (`REQ-[DOMAIN]-[NNN]`)
+- **Correct-by-Construction (CbC)** — the AI self-audits generated code against all constraints before delivery
+- **High-Reliability Engineering (HRE)** — engineering practices borrowed from mission-critical systems, applied to your codebase
+- **Architectural Decision Records (ADRs)** — every significant architectural choice documented, with context and rationale
+- **PR Governance** — PR templates that force attestation: did you update the spec? did you update the architecture doc?
+
+---
+
+## Stack templates included
+
+AgentCore is **tech-stack-agnostic** at its core and ships with ready-to-use configurations for:
+
+- **Ruby on Rails**
+- **Django**
+- **React Native**
+
+Each template provides stack-specific `.cursorrules` and code-review prompts so the AI understands your conventions from day one.
+
+---
+
+## Roadmap
+
+AgentCore is actively evolving. Upcoming work:
+
+- [ ] **`ai-tools` Go CLI** — replace `sync.sh` with a compiled, zero-dependency binary distributed via Homebrew, with versioning and multi-project sync
+- [ ] **Localization Bridge** — English rules, local-language output. Configure AI to generate specs in your team's native language while maintaining English code
+- [ ] **Deep CI Integration** — move async quality gate loops directly into GitHub Actions
+- [ ] **Skill Versioning** — pin your project's `.cursor/skills/` to a specific AgentCore release
+- [ ] **Visual Workflow Builder** — a GUI to generate skill state-machine files without writing XML by hand
+- [ ] **Central Config (`agent_core.yml`)** — per-project configuration for schema paths, default branches, and more (see [`specs/proposals/AGENT_CORE_CONFIG_SPEC.md`](specs/proposals/AGENT_CORE_CONFIG_SPEC.md))
+
+---
+
+## Contributing
+
+AgentCore is built in the open. If you've built a stack-agnostic skill, improved an HRE constraint, or have a new governance template — PRs are welcome.
+
+To contribute:
+1. Read [`playbooks/AI_DEVELOPER_PROTOCOL.md`](playbooks/AI_DEVELOPER_PROTOCOL.md) to understand the philosophy
+2. Read [`playbooks/EXPECTED_PROJECT_STRUCTURE.md`](playbooks/EXPECTED_PROJECT_STRUCTURE.md) to understand how the repo is organized
+3. Ensure any new skills follow the `<agentcore_skill>` XML state-machine format with `[PAUSE]` gateway methodology
+4. Open a PR — the `finish-branch` skill will guide you through our own review process
+
+We are building the practices that make AI-assisted development trustworthy. Come build them with us.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE) for details.
