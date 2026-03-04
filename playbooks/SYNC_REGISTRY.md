@@ -55,15 +55,4 @@ This file is the **single source of truth** for all file mappings between the ag
 | templates/CbC_GENERATION_PROMPT.md | .cursor/templates/CbC_GENERATION_PROMPT.md | merge |
 <!-- SYNC_REGISTRY [END] -->
 
----
 
-## Obsolete Skill Directories
-
-Directories listed here will be **deleted** from `.cursor/skills/` in destination projects to prevent the AI from discovering defunct or renamed skills.
-
-<!-- OBSOLETE_SKILLS [START] -->
-| Obsolete Path |
-|:---|
-| .cursor/skills/sync-schema-docs |
-| .cursor/skills/pr-description-clipboard |
-<!-- OBSOLETE_SKILLS [END] -->

@@ -88,29 +88,7 @@ while IFS= read -r line; do
   fi
 done < "$TMP_REGISTRY"
 
-# 5. Remove obsolete skill directories (prevents AI from discovering defunct skills)
-echo "🧹 Removing obsolete skills..."
-in_obsolete_block=false
-while IFS= read -r line; do
-  if [[ "$line" == *"OBSOLETE_SKILLS [START]"* ]]; then in_obsolete_block=true; continue; fi
-  if [[ "$line" == *"OBSOLETE_SKILLS [END]"* ]]; then in_obsolete_block=false; continue; fi
-  if ! $in_obsolete_block; then continue; fi
-
-  [[ "$line" != \|* ]] && continue
-  [[ "$line" == *"Obsolete Path"* ]] && continue
-  [[ "$line" == *"---"* ]] && continue
-
-  IFS='|' read -r _ path _ <<< "$line"
-  path=$(echo "$path" | xargs)
-  [ -z "$path" ] && continue
-
-  if [ -d "$path" ]; then
-    echo "   🗑️  Removing obsolete $path..."
-    rm -rf "$path"
-  fi
-done < "$TMP_REGISTRY"
-
-# 6. Inject agentic:guild OS Rules into .cursorrules
+# 5. Inject agentic:guild OS Rules into .cursorrules
 echo "⚙️  Configuring .cursorrules..."
 AGENTIC_GUILD_RULES=$(curl -s "$REPO_URL/templates/core/AGENTIC_GUILD_RULES.md")
 if [ -n "$AGENTIC_GUILD_RULES" ]; then

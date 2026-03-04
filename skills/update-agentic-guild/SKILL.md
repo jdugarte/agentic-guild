@@ -49,8 +49,6 @@
           - `.agenticguild/active_sessions`
           - `docs/{ai,core,features,audit,guides}` and `docs/core/ADRs`
           - `.github`
-
-          Read the **Sync Registry** from `.agenticguild/tmp_update/playbooks/SYNC_REGISTRY.md` (already available from Phase 0). Parse the `OBSOLETE_SKILLS [START]` / `OBSOLETE_SKILLS [END]` section to get the list of paths to remove. For each path in that list, if the directory exists locally, delete it and notify the user conversationally (e.g., "Cleaned up the old `sync-schema-docs` skill, which has been renamed.").
         </action>
         <yield>[AUTO-TRANSITION TO 1.2]</yield>
       </step>
@@ -71,9 +69,9 @@
         <action>
           Guard `.cursorrules` using the latest `templates/core/AGENTIC_GUILD_RULES.md` from `.agenticguild/tmp_update`:
           - If `.cursorrules` does not exist: Create it with the contents of `AGENTIC_GUILD_RULES.md`.
-          - If `.cursorrules` exists but does NOT contain `&lt;agenticguild_operating_system&gt;lt;agentic_guild_os&lt;agenticguild_operating_system&gt;gt;`: Prepend `AGENTIC_GUILD_RULES.md` to the existing `.cursorrules` content, preserving all existing project-specific rules.
-          - If `.cursorrules` already contains `&lt;agenticguild_operating_system&gt;lt;agentic_guild_os&lt;agenticguild_operating_system&gt;gt;` AND the block is identical to the upstream version: Skip silently.
-          - If `.cursorrules` already contains `&lt;agenticguild_operating_system&gt;lt;agentic_guild_os&lt;agenticguild_operating_system&gt;gt;` AND the block differs from upstream: Add `{ file: ".cursorrules", reason: "agentic:guild OS block has drifted from upstream" }` to the Conflict Queue. Do NOT attempt to resolve it here.
+          - If `.cursorrules` exists but does NOT contain `&lt;agentic_guild_os&gt;`: Prepend `AGENTIC_GUILD_RULES.md` to the existing `.cursorrules` content, preserving all existing project-specific rules.
+          - If `.cursorrules` already contains `&lt;agentic_guild_os&gt;` AND the block is identical to the upstream version: Skip silently.
+          - If `.cursorrules` already contains `&lt;agentic_guild_os&gt;` AND the block differs from upstream: Add `{ file: ".cursorrules", reason: "agentic:guild OS block has drifted from upstream" }` to the Conflict Queue. Do NOT attempt to resolve it here.
         </action>
         <yield>[AUTO-TRANSITION TO 1.4]</yield>
       </step>
