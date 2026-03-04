@@ -36,6 +36,20 @@ The AI doesn't just help you type faster. It **becomes a team member with a job 
 
 ---
 
+## The Process Is the Product
+
+Most tools optimize for output. AgentCore optimizes for the **process that generates output**.
+
+Code is not the end goal — it's a byproduct. What actually matters is whether the decisions that produced it were sound: whether requirements were understood, architecture was respected, trade-offs were considered, and the reasoning was documented for the next developer — human or AI — who has to work with it. As the engineers who built the Space Shuttle's flight software put it: [the most important creation is not the software — it's the process that produces it](https://david-haber.github.io/posts/the-right-stuff/).
+
+But here's what makes AgentCore different from a static rulebook: **the process improves as the project grows.**
+
+Every time a task completes, AgentCore's `harvest-rules` skill scans what was actually built — the Git diff, the solutions that emerged, the patterns that held up — and evaluates them against your existing standards. Where they represent genuine new knowledge, it proposes additions to your living architecture documents. The rules that guide tomorrow's decisions are informed by the experience of today's.
+
+The result is a system that doesn't just enforce good practices. It **accumulates them** — each task raising the baseline for the next, generating certainty rather than just output.
+
+---
+
 ## Who Is This For?
 
 AgentCore is for developers and technical leads who:
@@ -84,22 +98,6 @@ Once AgentCore is installed, your AI assistant gains a suite of structured, stat
 | `sync-docs` | Keeps SPEC, DATA_FLOW_MAP, ADRs, and schema references synchronized with every branch change. |
 | `roadmap-manage` | Add, prioritize, and track features and bugs in a structured `ROADMAP.md`. |
 | `pr-description` | Generates a complete, Git-history-based PR description for you to review and submit. |
-
-### A Note on `harvest-rules`: The Self-Improving Feedback Loop
-
-Most AI assistants operate in one direction: you give them rules, they follow (or ignore) them. AgentCore's `harvest-rules` skill closes the loop.
-
-Here's how it works:
-
-1. **Rules as guardrails** — Your `SYSTEM_ARCHITECTURE.md` and `.cursorrules` act as the AI's engineering conscience. Every code generation decision is made *against* these constraints.
-2. **Experience as input** — After each task, `harvest-rules` scans the Git diff for patterns that emerged organically: new abstractions, solutions to recurring problems, architectural decisions that actually worked.
-3. **Rules as output** — It evaluates those patterns against your existing documentation and, where they represent genuine new knowledge, proposes additions to your living standards.
-
-> *"Code is a liability. Judgment is an asset."*
->
-> The code is an expression of the process — not the other way around. What `harvest-rules` preserves and compounds is the judgment: the architectural thinking, the trade-offs considered, the patterns that held up under real conditions.
-
-The result is an AI that doesn't just *follow* your first set of rules. It **gets better at engineering** as the project matures — surfacing its own good decisions back into the standards that govern future decisions. Its capacity for architecturally sound judgment compounds over time.
 
 ---
 
