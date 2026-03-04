@@ -95,7 +95,7 @@ if [ -n "$AGENTIC_GUILD_RULES" ]; then
   if [ ! -f ".cursorrules" ]; then
     echo "   ⚙️  Creating .cursorrules with agentic:guild OS..."
     echo "$AGENTIC_GUILD_RULES" > .cursorrules
-  elif ! grep -q "<agentic_guild_os>" ".cursorrules"; then
+  elif ! grep -q "<agentic_guild_os>" ".cursorrules" && ! grep -q "<agentcore_operating_system>" ".cursorrules"; then
     echo "   ⚙️  Prepending agentic:guild OS to existing .cursorrules..."
     { echo "$AGENTIC_GUILD_RULES"; cat .cursorrules; } > .cursorrules.tmp && mv .cursorrules.tmp .cursorrules
   else
@@ -109,7 +109,7 @@ PRE_COMMIT_LOGIC=$(curl -s "$REPO_URL/templates/git-hooks/pre-commit-logic.sh")
 if [ -n "$PRE_COMMIT_LOGIC" ]; then
   HOOK_FILE=".git/hooks/pre-commit"
   if [ -f "$HOOK_FILE" ]; then
-    if ! grep -q "AGENTIC-GUILD PRE-COMMIT" "$HOOK_FILE"; then
+    if ! grep -q "AGENTIC-GUILD PRE-COMMIT" "$HOOK_FILE" && ! grep -q "AGENTCORE PRE-COMMIT" "$HOOK_FILE"; then
       echo "   📝 Appending safety check to existing pre-commit hook..."
       echo "$PRE_COMMIT_LOGIC" >> "$HOOK_FILE"
     else
