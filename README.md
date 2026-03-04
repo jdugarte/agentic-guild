@@ -5,6 +5,8 @@
 
 > *Stop vibe coding. Start engineering.*
 
+> *"Code is a liability. Judgment is an asset."*
+
 AgentCore is a meta-framework that turns your AI coding assistant into a **disciplined software engineer** — one that follows the strict practices, processes, and documentation standards we've always known mattered, but rarely enforced.
 
 ---
@@ -80,10 +82,22 @@ Once AgentCore is installed, your AI assistant gains a suite of structured, stat
 | `code-review` | Project-aware static analysis that produces numbered, actionable fixes — not generic advice. |
 | `audit-compliance` | An independent verification pass. Checks code determinism, REQ-ID traceability, and HRE compliance mathematically. |
 | `status-check` | The GPS. Reads persistent memory to diagnose exactly where a task is blocked and fully rehydrates context. |
-| `harvest-rules` | Scans Git diffs to extract new architectural patterns and maps them to living documentation. Prevents rule duplication. |
+| `harvest-rules` | Scans Git diffs to extract new architectural patterns and maps them to living documentation. The AI learns from its own work — rules improve as the project grows. |
 | `sync-docs` | Keeps SPEC, DATA_FLOW_MAP, ADRs, and schema references synchronized with every branch change. |
 | `roadmap-manage` | Add, prioritize, and track features and bugs in a structured `ROADMAP.md`. |
 | `pr-description` | Generates a complete, Git-history-based PR description for you to review and submit. |
+
+### A Note on `harvest-rules`: The Self-Improving Feedback Loop
+
+Most AI assistants operate in one direction: you give them rules, they follow (or ignore) them. AgentCore's `harvest-rules` skill closes the loop.
+
+Here's how it works:
+
+1. **Rules as guardrails** — Your `SYSTEM_ARCHITECTURE.md` and `.cursorrules` act as the AI's engineering conscience. Every code generation decision is made *against* these constraints.
+2. **Experience as input** — After each task, `harvest-rules` scans the Git diff for patterns that emerged organically: new abstractions, solutions to recurring problems, architectural decisions that actually worked.
+3. **Rules as output** — It evaluates those patterns against your existing documentation and, where they represent genuine new knowledge, proposes additions to your living standards.
+
+The result is an AI that doesn't just *follow* your first set of rules. It **gets better at engineering** as the project matures — surfacing its own good decisions back into the standards that govern future decisions. Its capacity for architecturally sound judgment compounds over time.
 
 ---
 
