@@ -6,7 +6,7 @@
   <memory_management>
     <directive>You possess persistent memory. You must use the `.agenticguild/` directory to survive context window limits and conversational tangents.</directive>
     <rules>
-      1. State Tracking: When executing any skill, you MUST write your current `<phase>` and `<step>` to `.agenticguild/current_state.md`.
+      1. State Tracking: When executing any skill, you MUST write your current `<phase>` and `<step>` to `.agenticguild/current_state.md`. When a task is active, you MUST also write the active session filename to `<active_task_pointer>` (e.g. `task_foo.md`) so the active task is unambiguous across IDEs and chats.
       2. Resuming: If the user says "Resume Task", "Status Check", or "Where were we?", you MUST read `.agenticguild/current_state.md` to rehydrate your context before answering.
       3. Artifact Generation: Log any identified tech-debt, blocked tasks, or test-coverage gaps into the appropriate artifact files within `.agenticguild/` rather than keeping them in temporary chat context.
     </rules>

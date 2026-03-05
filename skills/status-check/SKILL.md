@@ -26,20 +26,20 @@
   </pre_flight>
 
   <memory_format>
-    <current_state>Expected format: `<active_task_pointer>` = session filename (e.g. `task_foo.md`) or `[NONE]`; `<execution_context>` contains `<active_skill>`, `<current_phase>`, `<current_step>`.</current_state>
+    <current_state>Expected format: `<active_task_pointer>` = session filename (e.g. `task_foo.md`) or `[NONE]`; `<execution_context>` contains `<active_skill>`, `<current_phase>`, `<current_step>`. When multiple session files exist in `.agenticguild/active_sessions/`, the active task pointer MUST be set to the session filename so the active task is unambiguous across IDEs and branches; otherwise status-check cannot assume a single task.</current_state>
   </memory_format>
 
   <workflow>
     <phase id="1" name="State Read">
       <step id="1.1">
         <action>
-          Use the `view_file` tool to read `.agenticguild/current_state.md`, the active session file in `.agenticguild/active_sessions/` (indicated by current state), the `<implementation_plan>` block inside that session file, `git status`, and `git diff` against the default branch (e.g. `main`).
-          If `docs/ROADMAP.md` exists: Count Done, In Progress, Pending, Backlog to get a sense of overall progress.
-          Give the user a clear, helpful snapshot of where we currently are:
-          1. Overall Progress: A pleasant, helpful summary of the active skill, phase, and roadmap progress.
-          2. Current Step: What we are actively working on right now.
-          3. Blockers: Note any blockers (use the `view_file` tool to read from `.agenticguild/blocker_log.md`) or failing tests we need to tackle.
-          4. Next Steps: Instead of a strict command, finish by asking them conversationally if they are ready to jump back into the current step and proceed.
+          1. Discover sessions: List `.agenticguild/active_sessions/*.md` (e.g. via list_dir or glob), excluding `task_template.md`, to get all session files.
+          2. Read state: Use the `view_file` tool to read `.agenticguild/current_state.md`. Parse `<active_task_pointer>` — it should contain a session filename (e.g. `task_foo.md`) or `[NONE]`.
+          3. Resolve active task:
+             - If `<active_task_pointer>` contains a session filename (e.g. `task_foo.md`) and that file exists in `active_sessions/`: Treat that as the active task. Use the `view_file` tool to read that session file, its `<implementation_plan>` block, `git status`, and `git diff` against the default branch (e.g. `main`). If `docs/ROADMAP.md` exists, count Done, In Progress, Pending, Backlog. Give the user a clear, helpful snapshot: (1) Overall Progress: summary of active skill, phase, roadmap progress; (2) Current Step: what we are actively working on; (3) Blockers: from `.agenticguild/blocker_log.md` or failing tests; (4) Next Steps: ask conversationally if they are ready to jump back into the current step. Then [PAUSE].
+             - If `<active_task_pointer>` is missing, empty, or `[NONE]` and there are two or more session files: Do NOT assume a single task. List the session filenames you found (and optionally any "In Progress" items from `docs/ROADMAP.md` if it exists). Tell the user the active task could not be determined and ask them to confirm which task is active, or to set `<active_task_pointer>` in `.agenticguild/current_state.md` to the correct session filename (e.g. `task_i18n-support.md`). Then [PAUSE]. Do not report any one task as current until the user confirms or sets the pointer.
+             - If there is only one session file (or none): If pointer is set and file exists, proceed as in the first bullet. If pointer is missing or `[NONE]` and there is exactly one session file, you may treat it as the active task and report status, but still suggest setting `<active_task_pointer>` for cross-IDE consistency.
+          4. Blockers: When reporting status, note any blockers (read `.agenticguild/blocker_log.md`) or failing tests.
         </action>
         <yield>[PAUSE - AWAIT CONFIRMATION TO RESUME OR TACTICAL COMMAND]</yield>
       </step>

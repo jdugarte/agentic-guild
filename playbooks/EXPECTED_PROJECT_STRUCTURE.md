@@ -8,7 +8,7 @@ This document lists every referenced path, its purpose, and how it fits into the
 *Located in `.agenticguild/` (Gitignored)*
 | Path | Purpose |
 |------|---------|
-| `current_state.md` | Tracks the active skill, phase, and step. Used to resume tasks. Format: `<active_task_pointer>` = session filename (e.g. `task_foo.md`) or `[NONE]`; `<execution_context>` contains `<active_skill>`, `<current_phase>`, `<current_step>`. |
+| `current_state.md` | Tracks the active skill, phase, and step. Used to resume tasks. Format: `<active_task_pointer>` = session filename (e.g. `task_foo.md`) or `[NONE]`; `<execution_context>` contains `<active_skill>`, `<current_phase>`, `<current_step>`. When multiple session files exist, the active task pointer MUST be set so status-check and cross-IDE resume work correctly. |
 | `blocker_log.md` | Logs CI/CD failures or missing user inputs. |
 | `pending_refactors.md` | Logs tech debt discovered outside the scope of a current task. |
 | `active_sessions/task_*.md` | The runtime memory for specific features/bugfixes. |

@@ -1,4 +1,5 @@
 <agent_state>
+  <!-- When multiple task_*.md files exist in active_sessions/, set this to the active session filename (e.g. task_foo.md) for cross-IDE and status-check consistency. -->
   <active_task_pointer>
     [NONE]
   </active_task_pointer>

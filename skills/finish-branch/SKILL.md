@@ -71,7 +71,7 @@
       <step id="3.1">
         <action>
           Instruct the user to commit their code, push to the remote branch, and wait for CI feedback.
-          Update `.agenticguild/current_state.md` to indicate waiting status.
+          Update `.agenticguild/current_state.md` to indicate waiting status (e.g. in `<execution_context>`). Retain `<active_task_pointer>` unchanged so status-check and resume still know which task is active.
         </action>
         <yield>
           [PAUSE - AWAIT CI STATUS]
