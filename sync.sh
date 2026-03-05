@@ -21,7 +21,7 @@ fi
 # 2. Create necessary directories
 echo "📁 Building directory structure..."
 mkdir -p .cursor/skills
-mkdir -p .agenticguild/active_sessions
+mkdir -p .agenticguild/active_sessions .agenticguild/completed_sessions
 mkdir -p docs/{ai,core,features,audit,guides}
 mkdir -p docs/core/ADRs
 mkdir -p .github
@@ -50,6 +50,7 @@ fi
 # Ensure .gitkeep exists so the folder structure survives git
 touch .agenticguild/.gitkeep
 touch .agenticguild/active_sessions/.gitkeep
+touch .agenticguild/completed_sessions/.gitkeep
 
 # 4. Download files according to the Sync Registry
 echo "📥 Syncing files from registry..."

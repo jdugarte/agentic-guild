@@ -47,6 +47,7 @@
           Ensure required directories exist, creating them if absent:
           - `.cursor/skills/{start-task,finish-branch,harvest-rules,status-check,code-review,audit-compliance,sync-docs,pr-description,roadmap-manage,roadmap-consult,update-agentic-guild,explore-task,process-feedback}`
           - `.agenticguild/active_sessions`
+          - `.agenticguild/completed_sessions`
           - `docs/{ai,core,features,audit,guides}` and `docs/core/ADRs`
           - `.github`
         </action>
@@ -61,7 +62,7 @@
             .agenticguild/*
             !.agenticguild/.gitkeep
             ```
-          Ensure `.agenticguild/.gitkeep` and `.agenticguild/active_sessions/.gitkeep` exist as empty files (create if missing).
+          Ensure `.agenticguild/.gitkeep`, `.agenticguild/active_sessions/.gitkeep`, and `.agenticguild/completed_sessions/.gitkeep` exist as empty files (create directories and files if missing).
         </action>
         <yield>[AUTO-TRANSITION TO 1.3]</yield>
       </step>

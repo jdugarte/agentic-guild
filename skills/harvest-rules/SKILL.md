@@ -30,9 +30,9 @@
     <phase id="1" name="Pattern Analysis">
       <step id="1.0">
         <action>
-          Check if `.agenticguild/review_ledger.md` exists. 
-          If it exists, read its contents. Synthesize the recorded CI/Review diagnoses into actionable "Gotchas" or "Anti-Patterns" you should avoid in the future.
-          Combine these findings with your standard git diff analysis in the next step to propose a unified list of "New Rule Candidates".
+          Check if `.agenticguild/review_ledger.md` exists. If it exists, read its contents. Synthesize the recorded CI/Review diagnoses into actionable "Gotchas" or "Anti-Patterns" you should avoid in the future.
+          If an active task session exists: Use the `view_file` tool to read `.agenticguild/current_state.md` and parse `<active_task_pointer>`. If it points to a session filename (e.g. `task_foo.md`) and that file exists at `.agenticguild/active_sessions/` + that filename, read the entire session file. Analyze it for rule-worthy content: conventions, patterns, anti-patterns, "we must/must not" decisions, naming or style choices. Treat these as additional candidates to merge with review_ledger and the diff in step 1.1.
+          Combine review_ledger findings (and any session-derived candidates) with your standard git diff analysis in the next step to propose a unified list of "New Rule Candidates".
         </action>
         <yield>[AUTO-TRANSITION TO 1.1]</yield>
       </step>
@@ -40,10 +40,11 @@
         <action>
           Read the `git diff` of the current branch against the default branch (e.g. `main`). Use the repository's default branch unless the project uses a different convention.
           Analyze the changes for new error handling, naming conventions, UI patterns, or data structures.
+          If you read a session file in step 1.0, include the session-derived rule candidates in your analysis. Merge with diff-based and review_ledger-based candidates into one unified list.
           Scan the `docs/` directory and `.cursorrules` to determine where these new patterns should be codified.
-          Before outputting candidates: Verify proposed rules do not contradict or duplicate rules already in `docs/core/SYSTEM_ARCHITECTURE.md` or `.cursorrules`. Filter out any that do.
+          Before outputting candidates: Verify proposed rules do not contradict or duplicate rules already in `docs/core/SYSTEM_ARCHITECTURE.md` or `.cursorrules`. Filter out any that do. If run after sync-docs in the same workflow (e.g. finish-branch), skip candidates that are semantically equivalent to rules likely just added to `.cursorrules` by sync-docs to avoid near-duplicates.
           If the changes imply future work (e.g. a new pattern that will need follow-up features), consider suggesting adding a roadmap item to `docs/ROADMAP.md` via the roadmap-manage skill.
-          Output a list of "New Rule Candidates" formatted as: `[Target File] -> [Proposed Rule Addition]`.
+          Output a list of "New Rule Candidates" formatted as: `[Target File] -> [Proposed Rule Addition]`. Optionally note which candidates came from diff, review_ledger, or session when it helps the user.
         </action>
         <yield>[PAUSE - WRITE LOCK ACTIVE. AWAIT USER APPROVAL OF CANDIDATES]</yield>
       </step>

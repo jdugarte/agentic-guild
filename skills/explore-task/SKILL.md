@@ -36,7 +36,7 @@
         <action>
           First, check if `.agenticguild/current_state.md` points to an active session file.
           If it points to a session file: Verify the file actually exists. If it does, use the `view_file` tool to read it, summarize its current state, and ask what we need to figure out next. If it does not exist, treat this as a new session.
-          If this is a new session (no active task, or file is missing): Ask the user what they want to build or what problem they are trying to solve. Once they reply (in Step 1.2), you will derive `[name]` as a kebab-case slug, create `.agenticguild/active_sessions/task_[name].md`, and silently update `.agenticguild/current_state.md` to point to it.
+          If this is a new session (no active task, or file is missing): Ask the user what they want to build or what problem they are trying to solve. Once they reply (in Step 1.2), you will derive `[name]` as a kebab-case slug, create `.agenticguild/active_sessions/task_[name].md`, and silently update `.agenticguild/current_state.md` by setting `<active_task_pointer>` to `task_[name].md` so the active task is unambiguous across IDEs.
         </action>
         <yield>[PAUSE - AWAIT USER INPUT]</yield>
       </step>
@@ -44,7 +44,7 @@
         <action>
           Process the user's input. 
           1. Converse: Answer questions, propose architectural solutions, or ask clarifying questions to nail down edge cases.
-          2. Update Memory: If this is the first exchange and `task_[name].md` hasn't been created, derive the name, create the file using the `write_to_file` tool, and update `.agenticguild/current_state.md`. You MUST use the `replace_file_content` tool to update the active memory file to reflect any new decisions, requirements, or constraints agreed upon in this exchange. 
+          2. Update Memory: If this is the first exchange and `task_[name].md` hasn't been created, derive the name, create the file using the `write_to_file` tool, and update `.agenticguild/current_state.md` by setting `<active_task_pointer>` to `task_[name].md`. You MUST use the `replace_file_content` tool to update the active memory file to reflect any new decisions, requirements, or constraints agreed upon in this exchange. 
              - If a major pivot occurs (e.g. "let's not use Redis"), move the old plan to `task_[name]_history.md` so the active file stays clean.
           3. Domain Model (CbC): As domain entities and their data requirements become clear during the conversation, maintain a `## Domain Model` section in the memory file. For each entity introduced, document:
              - **Entity name** and its core responsibility

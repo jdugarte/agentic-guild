@@ -1,7 +1,7 @@
 <agentic_guild_skill>
   <skill_definition>
     <name>sync-docs</name>
-    <description>Keeps project docs in sync with branch changes. Analyzes the diff against the docs-to-sync list, then applies all necessary updates in one batch.</description>
+    <description>Keeps project docs in sync with branch changes and with task memory. Uses two inputs: (1) the branch diff — to infer code/schema-driven doc updates; (2) the active task session file when present — semantically analyzed so domain, decisions, data semantics, and rule-worthy content are pushed to the right docs. Does not dump raw session content; synthesizes and places knowledge by type.</description>
   </skill_definition>
 
   <state_machine_directives>
@@ -26,14 +26,30 @@
     <action>If they are missing, pause our work and gently let the user know we need these files to start. Offer to gracefully initialize the project templates for them. If the user says yes, run sync.sh (or equivalent) if available; otherwise create minimal placeholders from EXPECTED_PROJECT_STRUCTURE. Do NOT hallucinate contents without user confirmation.</action>
   </pre_flight>
 
+  <session_to_docs>
+    <directive>When an active session file exists, semantically analyze its full content (any structure). Classify fragments by knowledge type and map to the doc(s) below. Do not dump raw session text; synthesize and place. Session structure is free-form; analysis is semantic.</directive>
+    <knowledge_type_map>
+      Domain, entities, invariants, value objects, glossary → SPEC.md; optionally DATA_FLOW_MAP.md (lifecycles).
+      Architectural decisions, path not taken, rejections and rationale → ADRs/.
+      Stack, boundaries, "must not use X", constraints → SYSTEM_ARCHITECTURE.md, .cursorrules.
+      Conventions, patterns, anti-patterns (harvest-worthy rules) → .cursorrules, docs/core/SYSTEM_ARCHITECTURE.md.
+      Data semantics: why and when of data (tables, columns, entities) → SCHEMA_REFERENCE.md (enrichment; structure still from schema file).
+      Testing approach, mocking strategy → TESTING_STRATEGY_MATRIX.md or project testing doc if present.
+      Risks, assumptions, trade-offs → SPEC or ADRs. Open questions, future work → ROADMAP, SPEC, or ADRs.
+    </knowledge_type_map>
+  </session_to_docs>
+
   <workflow>
     <phase id="1" name="Impact Analysis">
       <step id="1.1">
         <action>
-          Read the git diff of the current branch against the default branch (e.g. `main`).
-          Use the `view_file` tool to read the "Docs to Sync" table in `docs/ai/EXPECTED_PROJECT_STRUCTURE.md` to get the list of docs and their update conditions.
-          For each doc in the list that exists in the project: determine whether the branch changes require updates based on the condition.
-          Output a neat, conversational report: [Doc] → [Needs update: Yes/No] + brief reason. Ask the user if they'd like you to proceed with these updates.
+          1. Read the git diff of the current branch against the default branch (e.g. `main`).
+          2. Use the `view_file` tool to read the "Docs to Sync" table in `docs/ai/EXPECTED_PROJECT_STRUCTURE.md` (or `playbooks/EXPECTED_PROJECT_STRUCTURE.md` if the former is missing) to get the list of docs and their update conditions.
+          3. Resolve and read session: Use the `view_file` tool to read `.agenticguild/current_state.md` and parse `<active_task_pointer>`. If the pointer contains a session filename (e.g. `task_foo.md`) and the file exists at `.agenticguild/active_sessions/` + that filename, read the entire session file. If no pointer or file is missing, continue with diff-only.
+          4. Diff-based analysis: For each doc in the table that exists in the project, determine whether the branch diff requires updates based on the condition. Build a diff-derived list: [Doc] → needs update (Yes/No) + reason.
+          5. Session-based analysis: If a session file was read, semantically analyze the whole session (all sections, any structure). Classify meaningful fragments using the &lt;knowledge_type_map&gt; (domain, decisions, data semantics, conventions/patterns, testing, risks, etc.). For each classified fragment, determine which doc(s) should receive content. Build a session-derived list: [Doc] ← [knowledge type]: brief description of what to add (do not dump raw session text). Include SCHEMA_REFERENCE when the session discusses data (why/when of tables/columns). Include .cursorrules and SYSTEM_ARCHITECTURE for conventions, patterns, anti-patterns.
+          6. Merge: Combine the two lists. If a doc is touched by both diff and session, mark source "both" and merge reasons. Result: one list per doc with source (diff | session | both) and reason.
+          7. Report: Output a neat, conversational report: [Doc] → [Needs update: Yes/No] [Source: diff | session | both] + brief reason. Ask the user if they'd like you to proceed with these updates.
         </action>
         <yield>[PAUSE - AWAIT USER CONFIRMATION TO PROCEED OR SKIP]</yield>
       </step>
@@ -62,14 +78,15 @@
     <phase id="3" name="Apply Updates">
       <step id="3.1">
         <action>
-          For each doc that needs updates, apply the changes in a single batch using the `replace_file_content` or `write_to_file` tools:
-          - **SCHEMA_REFERENCE.md**: Use the schema path resolved in Phase 2 (or skip if user refused). Use the `view_file` tool to read the raw schema file, map to SPEC.md, generate/overwrite.
-          - **SPEC.md**: Update domain logic, entities, glossary, or REQ-IDs as implied by the diff.
-          - **DATA_FLOW_MAP.md**: Update entity lifecycles or side-effects.
-          - **ADRs/**: Add or update ADRs for new architectural decisions.
-          - **SYSTEM_ARCHITECTURE.md**: Update stack, boundaries, or forbidden libs.
-          Output a helpful summary of what was updated.
-          Remind the user conversationally: "Just a heads up, to have more docs updated automatically, you can add them to the 'Docs to Sync' table in `docs/ai/EXPECTED_PROJECT_STRUCTURE.md`."
+          For each doc that needs updates, apply the changes in a single batch using the `replace_file_content` or `write_to_file` tools. Use the merged list from Step 1.1 (source: diff, session, or both).
+          - **SCHEMA_REFERENCE.md**: Use the schema path resolved in Phase 2 (or skip if user refused). Read the raw schema file and generate the structure (tables, columns, mapping to SPEC). If the session was read and contains data semantics (why and when of data, tables, columns), add those as short semantic notes in the appropriate places (e.g. per table or section). Do not replace structure with session content; enrich the generated doc with session-derived "why/when" where relevant.
+          - **SPEC.md**: Update domain logic, entities, glossary, or REQ-IDs from the diff and/or session. When source is "both", merge into one coherent update (session gives domain/entities/glossary; diff may add code-implied details). Use session metadata (req_id, roadmap_item) when present. Synthesize; do not paste raw session text.
+          - **DATA_FLOW_MAP.md**: Update entity lifecycles or side-effects from diff and/or session.
+          - **ADRs/**: Add or update ADRs from diff and/or session (decisions, path not taken, rationale). Synthesize into concise ADR prose; do not dump raw session.
+          - **SYSTEM_ARCHITECTURE.md**: Update stack, boundaries, forbidden libs, and conventions/patterns from diff and/or session. Session-derived rules (conventions, anti-patterns) go here.
+          - **.cursorrules**: When session (or diff) yields conventions, patterns, or anti-patterns, add them in the appropriate project rules section. Align with harvest-rules targets.
+          Output a helpful summary of what was updated and whether each came from diff, session, or both.
+          Remind the user conversationally: "Just a heads up, to have more docs updated automatically, you can add them to the 'Docs to Sync' table in EXPECTED_PROJECT_STRUCTURE."
         </action>
         <yield>[PAUSE - DOCS SYNCED. SKILL COMPLETE]</yield>
       </step>

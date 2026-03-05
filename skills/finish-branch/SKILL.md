@@ -71,7 +71,7 @@
       <step id="3.1">
         <action>
           Instruct the user to commit their code, push to the remote branch, and wait for CI feedback.
-          Update `.agenticguild/current_state.md` to indicate waiting status.
+          Update `.agenticguild/current_state.md` to indicate waiting status (e.g. in `<execution_context>`). Retain `<active_task_pointer>` unchanged so status-check and resume still know which task is active.
         </action>
         <yield>
           [PAUSE - AWAIT CI STATUS]
@@ -103,7 +103,19 @@
       </step>
       <step id="4.3">
         <action>Check if user-facing changes exist; if so, ensure `CHANGELOG.md` is updated. Use the `view_file` tool to read the active session file (if any) for `<roadmap_item>`. If this branch corresponds to a roadmap item, update `docs/ROADMAP.md`: move the item to Done, add today's date. If unclear, ask the user which roadmap item (if any) this branch completes. Then use the `view_file` tool to read and follow `.cursor/skills/pr-description/SKILL.md` until it yields. Remind the user to commit `docs/ROADMAP.md` if it was updated.</action>
-        <yield>[PAUSE - BRANCH IS FINISHED]</yield>
+        <yield>[PAUSE - AWAIT CONFIRMATION]</yield>
+      </step>
+      <step id="4.4">
+        <action>
+          The branch is finished and task knowledge has been synced to the docs (sync-docs and harvest-rules). Conversationally tell the user that and ask: "Would you like me to clear the active task from memory? I'll set the active task to none and archive the session file to `.agenticguild/completed_sessions/` so it's no longer the current task — you can delete that folder or file later if you don't need the record. Reply yes to clear and archive, or no to leave it as-is for now."
+        </action>
+        <yield>[PAUSE - AWAIT USER CONFIRMATION TO CLEAR TASK FROM MEMORY]</yield>
+      </step>
+      <step id="4.5">
+        <action>
+          Parse the user's reply. If they confirmed (e.g. "yes", "clear", "archive"): Read `.agenticguild/current_state.md` to get `<active_task_pointer>`. If the pointer contains a session filename (e.g. `task_foo.md`): Create `.agenticguild/completed_sessions/` if it does not exist (e.g. run `mkdir -p .agenticguild/completed_sessions`). Move the session file from `.agenticguild/active_sessions/` to `.agenticguild/completed_sessions/` with a date suffix in the filename (e.g. `task_foo_YYYY-MM-DD.md`). Then update `.agenticguild/current_state.md`: set `<active_task_pointer>` to `[NONE]` and `<execution_context>` to `<active_skill>[NONE]</active_skill>`, `<current_phase>[NONE]</current_phase>`, `<current_step>[NONE]</current_step>`. Confirm to the user that the task was cleared and the session file was archived. If the pointer was already [NONE] or the session file was missing, just update current_state to [NONE] and confirm. If they declined (e.g. "no", "keep"): Acknowledge; no changes. The session stays in active_sessions and the pointer unchanged; they can clear later via status-check or by running finish-branch again.
+        </action>
+        <yield>[PAUSE - FINISH-BRANCH COMPLETE]</yield>
       </step>
     </phase>
   </workflow>

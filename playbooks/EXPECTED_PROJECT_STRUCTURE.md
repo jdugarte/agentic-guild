@@ -8,10 +8,11 @@ This document lists every referenced path, its purpose, and how it fits into the
 *Located in `.agenticguild/` (Gitignored)*
 | Path | Purpose |
 |------|---------|
-| `current_state.md` | Tracks the active skill, phase, and step. Used to resume tasks. Format: `<active_task_pointer>` = session filename (e.g. `task_foo.md`) or `[NONE]`; `<execution_context>` contains `<active_skill>`, `<current_phase>`, `<current_step>`. |
+| `current_state.md` | Tracks the active skill, phase, and step. Used to resume tasks. Format: `<active_task_pointer>` = session filename (e.g. `task_foo.md`) or `[NONE]`; `<execution_context>` contains `<active_skill>`, `<current_phase>`, `<current_step>`. When multiple session files exist, the active task pointer MUST be set so status-check and cross-IDE resume work correctly. |
 | `blocker_log.md` | Logs CI/CD failures or missing user inputs. |
 | `pending_refactors.md` | Logs tech debt discovered outside the scope of a current task. |
 | `active_sessions/task_*.md` | The runtime memory for specific features/bugfixes. |
+| `completed_sessions/` | Archived task session files after branch finish (optional). Created when the user confirms clearing the active task; session is moved here with a date suffix (e.g. `task_foo_YYYY-MM-DD.md`). |
 
 ## 2. The Engine (XML Skills)
 *Located in `.cursor/skills/`*
@@ -22,8 +23,8 @@ This document lists every referenced path, its purpose, and how it fits into the
 | `code-review/SKILL.md` | Runs project-specific static analysis. |
 | `audit-compliance/SKILL.md` | IV&V agent that mathematically checks code determinism. |
 | `status-check/SKILL.md` | Reads `.agenticguild/` to diagnose blockers and rehydrate context. |
-| `harvest-rules/SKILL.md` | Scans diffs to update architecture docs and `.cursorrules`. |
-| `sync-docs/SKILL.md` | Keeps project docs in sync with branch changes (SPEC, SCHEMA_REFERENCE, DATA_FLOW_MAP, ADRs, etc.). |
+| `harvest-rules/SKILL.md` | Proposes new rules from git diff, review_ledger, and active task session; writes approved rules to `.cursorrules` and SYSTEM_ARCHITECTURE. |
+| `sync-docs/SKILL.md` | Keeps project docs in sync with branch diff and active task session (SPEC, SCHEMA_REFERENCE, DATA_FLOW_MAP, ADRs, .cursorrules, etc.); session is semantically analyzed and knowledge is placed by type. |
 | `pr-description/SKILL.md` | Outputs a Git-based PR description in a code block for the user to copy. |
 | `roadmap-manage/SKILL.md` | Add, prioritize, catalog items in the project roadmap. |
 | `roadmap-consult/SKILL.md` | Read-only view of roadmap: done, pending, priorities. |
@@ -41,16 +42,19 @@ This document lists every referenced path, its purpose, and how it fits into the
 | `ADRs/` | Architectural Decision Records to bypass `SYSTEM_ARCHITECTURE.md`. |
 
 ## 4. Docs to Sync (sync-docs skill)
-The `sync-docs` skill checks these docs against the branch diff and updates any that need changes. Only existing files are considered.
+The `sync-docs` skill keeps docs in sync with both the branch diff and task memory. It checks these docs against the diff and, when an active task session exists, semantically analyzes the session and proposes updates by knowledge type (domain → SPEC, decisions → ADRs, data semantics → SCHEMA_REFERENCE enrichment, conventions/patterns → .cursorrules and SYSTEM_ARCHITECTURE). Only existing files are considered.
 | Doc | When to update |
 |-----|----------------|
 | `docs/core/SPEC.md` | Domain logic, entities, or requirements changed |
-| `docs/core/SCHEMA_REFERENCE.md` | Schema or migrations changed (generated from raw schema) |
+| `docs/core/SCHEMA_REFERENCE.md` | Schema or migrations changed (structure from raw schema; session can enrich with data semantics — why/when of tables and columns) |
 | `docs/core/DATA_FLOW_MAP.md` | Entity lifecycles or side-effects changed |
 | `docs/core/ADRs/` | New architectural decisions |
 | `docs/core/SYSTEM_ARCHITECTURE.md` | Stack, boundaries, or forbidden libs changed |
+| `.cursorrules` | Conventions, patterns, or project rules changed (from diff or session) |
 
 **To add more docs:** Update this table in `docs/ai/EXPECTED_PROJECT_STRUCTURE.md`. Add the path and the condition that triggers an update. The sync-docs skill reads this list.
+
+**Overlap with harvest-rules:** Both sync-docs and harvest-rules write to `.cursorrules` (and SYSTEM_ARCHITECTURE) by design: sync-docs adds session- and diff-derived conventions/patterns in one batch; harvest-rules proposes rule candidates from diff, review_ledger, and session for user approval, then writes approved ones. They are complementary. Harvest-rules already filters out candidates that duplicate rules already in `.cursorrules`; when both run in the same finish-branch flow, the user may reject harvest-rules candidates that repeat what sync-docs just added.
 
 ## 5. Project-Specific Configuration
 

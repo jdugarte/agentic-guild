@@ -17,7 +17,7 @@ Date: 2026-02-20
 ### 2. Finish Branch
 **Goal**: Safely finalize a branch before opening a PR, ensuring all tests pass and docs are up-to-date.
 
-Finishing a branch runs a code review (guided by `docs/ai/code_review_prompt.md`), then a compliance and traceability audit against deterministic standards. The AI waits for you to push and paste any CI or BugBot feedback, loops on fixes until CI is green, and only then proceeds to final spackle: running sync-docs to update any docs that need changes based on the branch diff (SPEC, SCHEMA_REFERENCE, DATA_FLOW_MAP, ADRs, etc.), harvesting new rules into architecture docs, ensuring CHANGELOG is updated for user-facing changes, updating `docs/ROADMAP.md` to mark the completed item as done, and outputting the PR description in a code block. The AI never auto-commits or auto-pushes; it provides the exact `git push` command for you to run.
+Finishing a branch runs a code review (guided by `docs/ai/code_review_prompt.md`), then a compliance and traceability audit against deterministic standards. The AI waits for you to push and paste any CI or BugBot feedback, loops on fixes until CI is green, and only then proceeds to final spackle: running sync-docs to update any docs that need changes (using both the branch diff and the active task session — session is semantically analyzed so domain, decisions, data semantics, and conventions are pushed to the right docs), harvesting new rules from diff, review_ledger, and task session into architecture docs and .cursorrules, ensuring CHANGELOG is updated for user-facing changes, updating `docs/ROADMAP.md` to mark the completed item as done, and outputting the PR description in a code block. The AI never auto-commits or auto-pushes; it provides the exact `git push` command for you to run.
 
 ### 3. Status Check
 **Goal**: Understand blocking issues and re-hydrate the AI's state.
@@ -31,9 +31,9 @@ Finishing a branch runs a code review (guided by `docs/ai/code_review_prompt.md`
 | code-review | code review, run code review, review my changes | Project-specific static analysis and fix loop |
 | status-check | status check, where are we, blocked | Rehydrate context and diagnose blockers |
 | process-feedback | pasting CI logs, Bugbot comments, SonarQube errors | Interrupt subroutine: fix code, log diagnosis to short-term memory, resume previous task |
-| harvest-rules | harvest rules, update docs | Extract new patterns into docs and .cursorrules |
+| harvest-rules | harvest rules, update docs | Extract new patterns from diff, review_ledger, and task session into docs and .cursorrules |
 | audit-compliance | audit compliance, run audit | IV&V audit against deterministic standards |
-| sync-docs | sync docs, sync project docs | Keep docs in sync with branch changes (SPEC, SCHEMA_REFERENCE, DATA_FLOW_MAP, ADRs, etc.) |
+| sync-docs | sync docs, sync project docs | Keep docs in sync with branch diff and task session (semantic analysis → SPEC, SCHEMA_REFERENCE, ADRs, .cursorrules, etc.) |
 | pr-description | PR description, draft PR | Output PR description in a code block |
 | roadmap-manage | roadmap, manage roadmap, add to roadmap | Add, prioritize, catalog roadmap items |
 | roadmap-consult | roadmap status, what's pending, roadmap consult | Read-only view of done/pending/priorities |
