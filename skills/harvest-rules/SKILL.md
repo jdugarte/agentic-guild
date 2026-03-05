@@ -34,6 +34,7 @@
           If it exists, read its contents. Synthesize the recorded CI/Review diagnoses into actionable "Gotchas" or "Anti-Patterns" you should avoid in the future.
           Combine these findings with your standard git diff analysis in the next step to propose a unified list of "New Rule Candidates".
         </action>
+        <yield>[AUTO-TRANSITION TO 1.1]</yield>
       </step>
       <step id="1.1">
         <action>

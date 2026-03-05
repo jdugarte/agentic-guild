@@ -45,7 +45,7 @@
       <step id="1.1">
         <action>
           Ensure required directories exist, creating them if absent:
-          - `.cursor/skills/{start-task,finish-branch,harvest-rules,status-check,code-review,audit-compliance,sync-docs,pr-description,roadmap-manage,roadmap-consult,update-agentic-guild,explore-task}`
+          - `.cursor/skills/{start-task,finish-branch,harvest-rules,status-check,code-review,audit-compliance,sync-docs,pr-description,roadmap-manage,roadmap-consult,update-agentic-guild,explore-task,process-feedback}`
           - `.agenticguild/active_sessions`
           - `docs/{ai,core,features,audit,guides}` and `docs/core/ADRs`
           - `.github`

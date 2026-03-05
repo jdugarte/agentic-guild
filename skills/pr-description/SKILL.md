@@ -22,6 +22,9 @@
   </pre_flight>
 
   <hard_constraints>
+    NEVER use any tool to execute `git commit`, `git push`, or `git merge`. These commands are STRICTLY FORBIDDEN.
+    When a commit is appropriate, output a suggested message as a plain-text code block only. The user runs all git commands themselves.
+
     1. Do NOT use markdown link syntax for any file references in the PR description. IDEs convert local paths into broken `cci:7://file:///` hyperlinks that are useless when pasted into GitHub.
     2. For files that exist in the repo: use plain backtick code formatting only — e.g. `docs/core/SYSTEM_ARCHITECTURE.md`.
     3. For deleted or renamed files: use backtick formatting only — never link syntax.

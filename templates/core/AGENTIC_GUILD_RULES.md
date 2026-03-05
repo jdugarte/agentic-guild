@@ -52,6 +52,7 @@
       <route intent="Draft or format a Pull Request description" trigger="PR description, draft PR">Read `.cursor/skills/pr-description/SKILL.md`</route>
       <route intent="Manage, add to, or update the project roadmap" trigger="roadmap, manage roadmap, add to roadmap">Read `.cursor/skills/roadmap-manage/SKILL.md`</route>
       <route intent="Consult the roadmap to see what is pending or next" trigger="roadmap status, what's pending, roadmap consult">Read `.cursor/skills/roadmap-consult/SKILL.md`</route>
+      <route intent="Update agentic:guild skills, rules, and templates from the upstream repository" trigger="update agentic guild, update agentic:guild, sync agentic guild">Read `.cursor/skills/update-agentic-guild/SKILL.md`</route>
     </routes>
   </intent_routing>
 </agentic_guild_os>
