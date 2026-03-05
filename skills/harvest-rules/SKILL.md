@@ -42,7 +42,7 @@
           Analyze the changes for new error handling, naming conventions, UI patterns, or data structures.
           If you read a session file in step 1.0, include the session-derived rule candidates in your analysis. Merge with diff-based and review_ledger-based candidates into one unified list.
           Scan the `docs/` directory and `.cursorrules` to determine where these new patterns should be codified.
-          Before outputting candidates: Verify proposed rules do not contradict or duplicate rules already in `docs/core/SYSTEM_ARCHITECTURE.md` or `.cursorrules`. Filter out any that do.
+          Before outputting candidates: Verify proposed rules do not contradict or duplicate rules already in `docs/core/SYSTEM_ARCHITECTURE.md` or `.cursorrules`. Filter out any that do. If run after sync-docs in the same workflow (e.g. finish-branch), skip candidates that are semantically equivalent to rules likely just added to `.cursorrules` by sync-docs to avoid near-duplicates.
           If the changes imply future work (e.g. a new pattern that will need follow-up features), consider suggesting adding a roadmap item to `docs/ROADMAP.md` via the roadmap-manage skill.
           Output a list of "New Rule Candidates" formatted as: `[Target File] -> [Proposed Rule Addition]`. Optionally note which candidates came from diff, review_ledger, or session when it helps the user.
         </action>

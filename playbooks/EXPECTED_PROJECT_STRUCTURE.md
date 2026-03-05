@@ -50,8 +50,11 @@ The `sync-docs` skill keeps docs in sync with both the branch diff and task memo
 | `docs/core/DATA_FLOW_MAP.md` | Entity lifecycles or side-effects changed |
 | `docs/core/ADRs/` | New architectural decisions |
 | `docs/core/SYSTEM_ARCHITECTURE.md` | Stack, boundaries, or forbidden libs changed |
+| `.cursorrules` | Conventions, patterns, or project rules changed (from diff or session) |
 
 **To add more docs:** Update this table in `docs/ai/EXPECTED_PROJECT_STRUCTURE.md`. Add the path and the condition that triggers an update. The sync-docs skill reads this list.
+
+**Overlap with harvest-rules:** Both sync-docs and harvest-rules write to `.cursorrules` (and SYSTEM_ARCHITECTURE) by design: sync-docs adds session- and diff-derived conventions/patterns in one batch; harvest-rules proposes rule candidates from diff, review_ledger, and session for user approval, then writes approved ones. They are complementary. Harvest-rules already filters out candidates that duplicate rules already in `.cursorrules`; when both run in the same finish-branch flow, the user may reject harvest-rules candidates that repeat what sync-docs just added.
 
 ## 5. Project-Specific Configuration
 
