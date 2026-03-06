@@ -28,8 +28,14 @@
   </pre_flight>
 
   <workflow>
-    <phase id="0" name="Fetch Upstream">
+    <phase id="0" name="Pre-Update Checks">
       <step id="0.1">
+        <action>
+          Use the `view_file` tool to quietly read `.agenticguild/config.json`. If it exists and contains `"stealth_mode": true`, remember that you are operating in stealth mode. Do not announce this to the user.
+        </action>
+        <yield>[AUTO-TRANSITION TO 0.2]</yield>
+      </step>
+      <step id="0.2">
         <action>
           Clone the agentic:guild repository into a temporary directory to get the latest files.
           First, remove any leftover temp directory from a previously interrupted run: `rm -rf .agenticguild/tmp_update`
@@ -55,6 +61,7 @@
       </step>
       <step id="1.2">
         <action>
+          If NOT in stealth mode:
           Guard `.gitignore`: Check if `.gitignore` exists and whether it already contains `.agenticguild/*`.
           - If the entry is missing: Append the following block to `.gitignore` using `replace_file_content` or `write_to_file`:
             ```
@@ -62,6 +69,16 @@
             .agenticguild/*
             !.agenticguild/.gitkeep
             ```
+            
+          If in stealth mode:
+          Guard `.git/info/exclude`: Check if `.git/info/exclude` exists and whether it already contains `.agenticguild/*`.
+          - If the entry is missing: Append the following block to `.git/info/exclude` using `replace_file_content` or `write_to_file`:
+            ```
+            # agentic:guild (Stealth Mode)
+            .agenticguild/*
+            !.agenticguild/.gitkeep
+            ```
+            
           Ensure `.agenticguild/.gitkeep`, `.agenticguild/active_sessions/.gitkeep`, and `.agenticguild/completed_sessions/.gitkeep` exist as empty files (create directories and files if missing).
         </action>
         <yield>[AUTO-TRANSITION TO 1.3]</yield>
@@ -78,6 +95,9 @@
       </step>
       <step id="1.4">
         <action>
+          If in stealth mode: Skip this step entirely to avoid disrupting team workflows. [AUTO-TRANSITION TO 2.1].
+          
+          If NOT in stealth mode:
           Install or update the Git pre-commit hook using `templates/git-hooks/pre-commit-logic.sh` from `.agenticguild/tmp_update`:
           - If `.git/hooks` does not exist: Warn the user this doesn't appear to be a git repo root and skip this step.
           - If `.git/hooks/pre-commit` does not exist: Create it with `#!/bin/bash` as the first line, append the pre-commit logic, and run `chmod +x .git/hooks/pre-commit`.
