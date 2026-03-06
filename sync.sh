@@ -45,7 +45,6 @@ if [ "$STEALTH_MODE" = true ]; then
       echo ""
       echo "# agentic:guild (Stealth Mode)"
       echo ".agenticguild/*"
-      echo "!.agenticguild/.gitkeep"
     } >> "$EXCLUDE_FILE"
   fi
   
@@ -72,31 +71,33 @@ else
       echo "!.agenticguild/.gitkeep"
     } > "$GITIGNORE_FILE"
   fi
+  
+  # Ensure stealth mode is explicitly turned off if previously set
+  mkdir -p .agenticguild
+  echo '{"stealth_mode": false}' > .agenticguild/config.json
 fi
 
-# Helper function to create directory and selectively ignore it if stealth mode
+# Helper function to create directory
 function ensure_dir() {
   local dir="$1"
   if [ ! -d "$dir" ]; then
     mkdir -p "$dir"
-    if [ "$STEALTH_MODE" = true ]; then
-      if ! grep -q "^$dir/\*$" "$EXCLUDE_FILE"; then
-        echo "$dir/*" >> "$EXCLUDE_FILE"
-      fi
-    fi
   fi
 }
 
 ensure_dir .cursor/skills
 ensure_dir .agenticguild/active_sessions
 ensure_dir .agenticguild/completed_sessions
-ensure_dir docs/ai
-ensure_dir docs/core
-ensure_dir docs/features
-ensure_dir docs/audit
-ensure_dir docs/guides
-ensure_dir docs/core/ADRs
-ensure_dir .github
+
+if [ "$STEALTH_MODE" = false ]; then
+  ensure_dir docs/ai
+  ensure_dir docs/core
+  ensure_dir docs/features
+  ensure_dir docs/audit
+  ensure_dir docs/guides
+  ensure_dir docs/core/ADRs
+  ensure_dir .github
+fi
 
 # Ensure .gitkeep exists so the folder structure survives git
 touch .agenticguild/.gitkeep
@@ -138,10 +139,14 @@ while IFS= read -r line; do
       echo "   ⏩ Skipping $dest (already exists)"
     fi
   else
-    echo "   📥 Syncing $dest..."
-    curl -s "$REPO_URL/$source" > "$dest"
-    if [ "$STEALTH_MODE" = true ]; then
-      if ! grep -q "^$dest$" "$EXCLUDE_FILE"; then echo "$dest" >> "$EXCLUDE_FILE"; fi
+    if [ "$STEALTH_MODE" = true ] && [ -f "$dest" ]; then
+      echo "   🛡️  Stealth Mode: Skipping $dest (already exists) to avoid dirtying tracked files."
+    else
+      echo "   📥 Syncing $dest..."
+      curl -s "$REPO_URL/$source" > "$dest"
+      if [ "$STEALTH_MODE" = true ]; then
+        if ! grep -q "^$dest$" "$EXCLUDE_FILE"; then echo "$dest" >> "$EXCLUDE_FILE"; fi
+      fi
     fi
   fi
 done < "$TMP_REGISTRY"
@@ -173,24 +178,24 @@ if [ "$STEALTH_MODE" = true ]; then
 else
   echo "⚓ Installing Git Hooks..."
   PRE_COMMIT_LOGIC=$(curl -s "$REPO_URL/templates/git-hooks/pre-commit-logic.sh")
-if [ -n "$PRE_COMMIT_LOGIC" ]; then
-  HOOK_FILE=".git/hooks/pre-commit"
-  if [ -f "$HOOK_FILE" ]; then
-    if ! grep -q "AGENTIC-GUILD PRE-COMMIT" "$HOOK_FILE"; then
-      echo "   📝 Appending safety check to existing pre-commit hook..."
-      echo "$PRE_COMMIT_LOGIC" >> "$HOOK_FILE"
+  if [ -n "$PRE_COMMIT_LOGIC" ]; then
+    HOOK_FILE=".git/hooks/pre-commit"
+    if [ -f "$HOOK_FILE" ]; then
+      if ! grep -q "AGENTIC-GUILD PRE-COMMIT" "$HOOK_FILE"; then
+        echo "   📝 Appending safety check to existing pre-commit hook..."
+        echo "$PRE_COMMIT_LOGIC" >> "$HOOK_FILE"
+      else
+        echo "   ✅ agentic:guild pre-commit hook already present."
+      fi
     else
-      echo "   ✅ agentic:guild pre-commit hook already present."
+      if [ -d ".git/hooks" ]; then
+        echo "   🆕 Creating new pre-commit hook..."
+        { echo "#!/bin/bash"; echo "$PRE_COMMIT_LOGIC"; } > "$HOOK_FILE"
+        chmod +x "$HOOK_FILE"
+      else
+        echo "   ⚠️  .git/hooks directory not found. Are you in the root of a git repository?"
+      fi
     fi
-  else
-    if [ -d ".git/hooks" ]; then
-      echo "   🆕 Creating new pre-commit hook..."
-      { echo "#!/bin/bash"; echo "$PRE_COMMIT_LOGIC"; } > "$HOOK_FILE"
-      chmod +x "$HOOK_FILE"
-    else
-      echo "   ⚠️  .git/hooks directory not found. Are you in the root of a git repository?"
-    fi
-  fi
   else
     echo "   ⚠️  Failed to fetch pre-commit hook logic. Skipping git hook installation."
   fi

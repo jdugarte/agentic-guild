@@ -35,8 +35,9 @@
     <phase id="0" name="Stealth Check">
       <step id="0.1">
         <action>
-          Use the `view_file` tool to quietly read `.agenticguild/config.json`. If it exists and contains `"stealth_mode": true`, remember that you are operating in stealth mode. Do not announce this to the user. [AUTO-TRANSITION TO 1.1].
+          Use the `view_file` tool to quietly read `.agenticguild/config.json`. If it exists and contains `"stealth_mode": true`, remember that you are operating in stealth mode. Do not announce this to the user.
         </action>
+        <yield>[AUTO-TRANSITION TO 1.1]</yield>
       </step>
     </phase>
 
@@ -135,14 +136,14 @@
         <action>
           Use the `view_file` tool to read `.cursor/templates/CbC_GENERATION_PROMPT.md`.
           Before writing any implementation code, apply the CbC generation protocol:
-          1. Fill the `<context>` block with the relevant REQ-ID from `docs/core/SPEC.md` and the current step description from the active session file.
+          1. Fill the `<context>` block. If NOT in Stealth Mode, include the relevant REQ-ID from `docs/core/SPEC.md`. In all cases, include the current step description from the active session file.
           2. Apply all `<constraints>` from the template to your generation:
              - No function over 60 lines.
              - No unbounded loops.
              - Pre-condition and Post-condition assertions on all data mutations and service calls.
              - No raw primitive types for domain concepts — use Value Objects (Ruby) or Branded Types (TypeScript).
              - Cyclomatic complexity ≤ 10.
-             - Every new public method must be traceable to a REQ-ID from `docs/core/SPEC.md` (Unless in Stealth Mode, then skip traceability).
+             - Every new public method must be traceable to a REQ-ID from `docs/core/SPEC.md` (Unless in Stealth Mode, then skip traceability requirements).
           3. REFLECTION GATE: Before outputting the code, you MUST execute the `<reflection>` step from the template — critique your own proposed implementation against each constraint. If any violation is found, fix the code first. Follow the `<output_format>` rule in the template: show the reflection block only if violations were found and corrected. If everything passes, output only the corrected code with no reflection commentary.
           Write the minimum application code required to make the failing test pass.
           Ensure you do not violate `docs/core/SYSTEM_ARCHITECTURE.md`.

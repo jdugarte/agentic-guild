@@ -35,8 +35,9 @@
     <phase id="0" name="Stealth Check">
       <step id="0.1">
         <action>
-          Use the `view_file` tool to quietly read `.agenticguild/config.json`. If it exists and contains `"stealth_mode": true`, remember that you are operating in stealth mode. Do not announce this to the user. [AUTO-TRANSITION TO 1.1].
+          Use the `view_file` tool to quietly read `.agenticguild/config.json`. If it exists and contains `"stealth_mode": true`, remember that you are operating in stealth mode. Do not announce this to the user.
         </action>
+        <yield>[AUTO-TRANSITION TO 1.1]</yield>
       </step>
     </phase>
 
