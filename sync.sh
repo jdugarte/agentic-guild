@@ -8,7 +8,19 @@ REPO_URL="https://raw.githubusercontent.com/jdugarte/agentic-guild/main"
 REGISTRY_URL="$REPO_URL/playbooks/SYNC_REGISTRY.md"
 TMP_REGISTRY="/tmp/agenticguild_sync_registry.md"
 
-echo "🧠 Initializing agentic:guild Operating System..."
+STEALTH_MODE=false
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --stealth) STEALTH_MODE=true; shift ;;
+        *) shift ;;
+    esac
+done
+
+if [ "$STEALTH_MODE" = true ]; then
+  echo "🥷 Initializing agentic:guild Operating System in STEALTH MODE..."
+else
+  echo "🧠 Initializing agentic:guild Operating System..."
+fi
 
 # 1. Fetch the Sync Registry (single source of truth for all file mappings)
 echo "📋 Fetching Sync Registry..."
@@ -18,33 +30,90 @@ if [ ! -s "$TMP_REGISTRY" ]; then
   exit 1
 fi
 
-# 2. Create necessary directories
+# 2. Create necessary directories and stealth tracking
 echo "📁 Building directory structure..."
-mkdir -p .cursor/skills
-mkdir -p .agenticguild/active_sessions .agenticguild/completed_sessions
-mkdir -p docs/{ai,core,features,audit,guides}
-mkdir -p docs/core/ADRs
-mkdir -p .github
 
-# 3. Configure Gitignore for AI Memory
-GITIGNORE_FILE=".gitignore"
-if [ -f "$GITIGNORE_FILE" ]; then
-  if ! grep -q ".agenticguild/\*" "$GITIGNORE_FILE"; then
-    echo "📝 Securing .agenticguild/ memory folder in .gitignore..."
+if [ "$STEALTH_MODE" = true ]; then
+  mkdir -p .git/info
+  EXCLUDE_FILE=".git/info/exclude"
+  touch "$EXCLUDE_FILE"
+  echo "📝 Securing agentic:guild files in .git/info/exclude selectively (Stealth Mode)..."
+  
+  # Ensure the exclude file has the section header
+  if ! grep -q "# agentic:guild (Stealth Mode)" "$EXCLUDE_FILE"; then
+    echo "" >> "$EXCLUDE_FILE"
+    echo "# agentic:guild (Stealth Mode)" >> "$EXCLUDE_FILE"
+    echo ".agenticguild/*" >> "$EXCLUDE_FILE"
+    echo "!.agenticguild/.gitkeep" >> "$EXCLUDE_FILE"
+  fi
+  
+  # Write stealth config
+  mkdir -p .agenticguild
+  echo '{"stealth_mode": true}' > .agenticguild/config.json
+else
+  GITIGNORE_FILE=".gitignore"
+  if [ -f "$GITIGNORE_FILE" ]; then
+    if ! grep -q ".agenticguild/\*" "$GITIGNORE_FILE"; then
+      echo "📝 Securing .agenticguild/ memory folder in .gitignore..."
+      {
+        echo ""
+        echo "# agentic:guild Transient Memory"
+        echo ".agenticguild/*"
+        echo "!.agenticguild/.gitkeep"
+      } >> "$GITIGNORE_FILE"
+    fi
+  else
+    echo "📝 Creating .gitignore to secure .agenticguild/ memory..."
     {
-      echo ""
       echo "# agentic:guild Transient Memory"
       echo ".agenticguild/*"
       echo "!.agenticguild/.gitkeep"
-    } >> "$GITIGNORE_FILE"
+    } > "$GITIGNORE_FILE"
   fi
-else
-  echo "📝 Creating .gitignore to secure .agenticguild/ memory..."
-  {
-    echo "# agentic:guild Transient Memory"
-    echo ".agenticguild/*"
-    echo "!.agenticguild/.gitkeep"
-  } > "$GITIGNORE_FILE"
+fi
+
+# Helper function to create directory and selectively ignore it if stealth mode
+function ensure_dir() {
+  local dir="$1"
+  if [ ! -d "$dir" ]; then
+    mkdir -p "$dir"
+    if [ "$STEALTH_MODE" = true ]; then
+      if ! grep -q "^$dir/\*$" "$EXCLUDE_FILE"; then
+        echo "$dir/*" >> "$EXCLUDE_FILE"
+      fi
+    fi
+  fi
+}
+
+ensure_dir .cursor/skills
+ensure_dir .agenticguild/active_sessions
+ensure_dir .agenticguild/completed_sessions
+ensure_dir docs/ai
+ensure_dir docs/core
+ensure_dir docs/features
+ensure_dir docs/audit
+ensure_dir docs/guides
+ensure_dir docs/core/ADRs
+ensure_dir .github
+  GITIGNORE_FILE=".gitignore"
+  if [ -f "$GITIGNORE_FILE" ]; then
+    if ! grep -q ".agenticguild/\*" "$GITIGNORE_FILE"; then
+      echo "📝 Securing .agenticguild/ memory folder in .gitignore..."
+      {
+        echo ""
+        echo "# agentic:guild Transient Memory"
+        echo ".agenticguild/*"
+        echo "!.agenticguild/.gitkeep"
+      } >> "$GITIGNORE_FILE"
+    fi
+  else
+    echo "📝 Creating .gitignore to secure .agenticguild/ memory..."
+    {
+      echo "# agentic:guild Transient Memory"
+      echo ".agenticguild/*"
+      echo "!.agenticguild/.gitkeep"
+    } > "$GITIGNORE_FILE"
+  fi
 fi
 
 # Ensure .gitkeep exists so the folder structure survives git
@@ -74,18 +143,24 @@ while IFS= read -r line; do
   [ -z "$source" ] && continue
 
   # Ensure parent directory exists
-  mkdir -p "$(dirname "$dest")"
+  ensure_dir "$(dirname "$dest")"
 
   if [ "$strategy" == "init" ]; then
     if [ ! -f "$dest" ]; then
       echo "   📄 Initializing $dest..."
       curl -s "$REPO_URL/$source" > "$dest"
+      if [ "$STEALTH_MODE" = true ]; then
+        if ! grep -q "^$dest$" "$EXCLUDE_FILE"; then echo "$dest" >> "$EXCLUDE_FILE"; fi
+      fi
     else
       echo "   ⏩ Skipping $dest (already exists)"
     fi
   else
     echo "   📥 Syncing $dest..."
     curl -s "$REPO_URL/$source" > "$dest"
+    if [ "$STEALTH_MODE" = true ]; then
+      if ! grep -q "^$dest$" "$EXCLUDE_FILE"; then echo "$dest" >> "$EXCLUDE_FILE"; fi
+    fi
   fi
 done < "$TMP_REGISTRY"
 
@@ -96,17 +171,26 @@ if [ -n "$AGENTIC_GUILD_RULES" ]; then
   if [ ! -f ".cursorrules" ]; then
     echo "   ⚙️  Creating .cursorrules with agentic:guild OS..."
     echo "$AGENTIC_GUILD_RULES" > .cursorrules
+    if [ "$STEALTH_MODE" = true ]; then
+      if ! grep -q "^.cursorrules$" "$EXCLUDE_FILE"; then echo ".cursorrules" >> "$EXCLUDE_FILE"; fi
+    fi
   elif ! grep -q "<agentic_guild_os>" ".cursorrules"; then
     echo "   ⚙️  Prepending agentic:guild OS to existing .cursorrules..."
     { echo "$AGENTIC_GUILD_RULES"; cat .cursorrules; } > .cursorrules.tmp && mv .cursorrules.tmp .cursorrules
+    if [ "$STEALTH_MODE" = true ]; then
+      echo "   ⚠️  In stealth mode, .cursorrules blocks were added. Make sure to strip them out before committing changes if team does not want agentic:guild config."
+    fi
   else
     echo "   ✅ agentic:guild OS rules already present in .cursorrules."
   fi
 fi
 
 # 7. Git Hook Installation
-echo "⚓ Installing Git Hooks..."
-PRE_COMMIT_LOGIC=$(curl -s "$REPO_URL/templates/git-hooks/pre-commit-logic.sh")
+if [ "$STEALTH_MODE" = true ]; then
+  echo "⚓ Skipping Git Hook installation in stealth mode to avoid disrupting team workflows."
+else
+  echo "⚓ Installing Git Hooks..."
+  PRE_COMMIT_LOGIC=$(curl -s "$REPO_URL/templates/git-hooks/pre-commit-logic.sh")
 if [ -n "$PRE_COMMIT_LOGIC" ]; then
   HOOK_FILE=".git/hooks/pre-commit"
   if [ -f "$HOOK_FILE" ]; then
@@ -125,8 +209,9 @@ if [ -n "$PRE_COMMIT_LOGIC" ]; then
       echo "   ⚠️  .git/hooks directory not found. Are you in the root of a git repository?"
     fi
   fi
-else
-  echo "   ⚠️  Failed to fetch pre-commit hook logic. Skipping git hook installation."
+  else
+    echo "   ⚠️  Failed to fetch pre-commit hook logic. Skipping git hook installation."
+  fi
 fi
 
 # Cleanup

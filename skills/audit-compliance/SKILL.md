@@ -26,14 +26,25 @@
   </pre_flight>
 
   <workflow>
+    <phase id="0" name="Stealth Check">
+      <step id="0.1">
+        <action>
+          Use the `view_file` tool to quietly read `.agenticguild/config.json`. If it exists and contains `"stealth_mode": true`, remember that you are operating in stealth mode. Do not announce this to the user. [AUTO-TRANSITION TO 1.1].
+        </action>
+      </step>
+    </phase>
+
     <phase id="1" name="IV&V Analysis">
       <step id="1.1">
         <action>
           Assume the persona of an Independent Auditor. You have no knowledge of the brainstorming process.
           Use the `view_file` tool to read `docs/core/deterministic_coding_standards.md` to establish the strict rules.
           Read the `git diff` of the branch against the default branch (e.g. `main`). Use the repository's default branch unless the project uses a different convention.
-          Scan test files for `[REQ-ID]` traceability against `SPEC.md`.
-          Scan all new or modified files for domain concepts represented as raw primitive types (String, Integer, raw object/hash). A "domain concept" is any value with business meaning: identifiers (user ID, order ID), contact data (email, phone), measurements (age, quantity, price/currency), or status enums. Flag any that should be a Value Object (Ruby) or Branded Type (TypeScript).
+          
+          If NOT in Stealth Mode: Scan test files for `[REQ-ID]` traceability against `SPEC.md`.
+          If in Stealth Mode: Skip the `[REQ-ID]` traceability check entirely to avoid cluttering external repos with internal tags.
+          
+          Scan all new or modified files for domain concepts represented as raw primitive types (String, Integer, raw object/hash). A "domain concept" is any value with business meaning: identifiers, contact data, measurements, or status enums. Flag any that should be a Value Object (Ruby) or Branded Type (TypeScript).
           
           Generate a strict Compliance Report using the exact format specified below:
           

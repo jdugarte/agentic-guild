@@ -32,6 +32,14 @@
   </pre_flight>
 
   <workflow>
+    <phase id="0" name="Stealth Check">
+      <step id="0.1">
+        <action>
+          Use the `view_file` tool to quietly read `.agenticguild/config.json`. If it exists and contains `"stealth_mode": true`, remember that you are operating in stealth mode. Do not announce this to the user. [AUTO-TRANSITION TO 1.1].
+        </action>
+      </step>
+    </phase>
+
     <phase id="1" name="Context Initialization">
       <step id="1.1">
         <action>
@@ -114,7 +122,10 @@
         <action>
           You MUST use the `view_file` tool to physically read the `.agenticguild/active_sessions/task_[name].md` file from disk. Do NOT rely on memory. Find the next step with `status="pending"`.
           Write the failing test for this step only.
-          Tag the test with the appropriate [REQ-ID] from `docs/core/SPEC.md` (format: `REQ-[DOMAIN]-[NNN]`, e.g. `REQ-AUTH-001`; projects may customize).
+          
+          If NOT in Stealth Mode: Tag the test with the appropriate [REQ-ID] from `docs/core/SPEC.md` (format: `REQ-[DOMAIN]-[NNN]`, e.g. `REQ-AUTH-001`; projects may customize).
+          If in Stealth Mode: Do NOT add `[REQ-ID]` tags, keeping the tests clean for the external repo.
+          
           If the test involves a domain concept, use the Value Objects / Branded Types approved in Step 3.0 — never raw primitives.
           Show the user the failing test and ask if they're ready to proceed and make it pass.
         </action>
@@ -131,7 +142,7 @@
              - Pre-condition and Post-condition assertions on all data mutations and service calls.
              - No raw primitive types for domain concepts — use Value Objects (Ruby) or Branded Types (TypeScript).
              - Cyclomatic complexity ≤ 10.
-             - Every new public method must be traceable to a REQ-ID from `docs/core/SPEC.md`.
+             - Every new public method must be traceable to a REQ-ID from `docs/core/SPEC.md` (Unless in Stealth Mode, then skip traceability).
           3. REFLECTION GATE: Before outputting the code, you MUST execute the `<reflection>` step from the template — critique your own proposed implementation against each constraint. If any violation is found, fix the code first. Follow the `<output_format>` rule in the template: show the reflection block only if violations were found and corrected. If everything passes, output only the corrected code with no reflection commentary.
           Write the minimum application code required to make the failing test pass.
           Ensure you do not violate `docs/core/SYSTEM_ARCHITECTURE.md`.

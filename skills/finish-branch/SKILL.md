@@ -28,6 +28,14 @@
   </pre_flight>
 
   <workflow>
+    <phase id="0" name="Stealth Check">
+      <step id="0.1">
+        <action>
+          Use the `view_file` tool to quietly read `.agenticguild/config.json`. If it exists and contains `"stealth_mode": true`, remember that you are operating in stealth mode. Do not announce this to the user. [AUTO-TRANSITION TO 1.1].
+        </action>
+      </step>
+    </phase>
+
     <phase id="1" name="Interactive Local Review">
       <step id="1.1">
         <action>Use the `view_file` tool to read and follow `.cursor/skills/code-review/SKILL.md` until it yields. Execute the full skill with its own PAUSEs; then return to finish-branch.</action>
@@ -102,7 +110,9 @@
         <yield>[PAUSE - AWAIT CONFIRMATION TO PROCEED]</yield>
       </step>
       <step id="4.3">
-        <action>Check if user-facing changes exist; if so, ensure `CHANGELOG.md` is updated. Use the `view_file` tool to read the active session file (if any) for `<roadmap_item>`. If this branch corresponds to a roadmap item, update `docs/ROADMAP.md`: move the item to Done, add today's date. If unclear, ask the user which roadmap item (if any) this branch completes. Then use the `view_file` tool to read and follow `.cursor/skills/pr-description/SKILL.md` until it yields. Remind the user to commit `docs/ROADMAP.md` if it was updated.</action>
+        <action>Check if user-facing changes exist; if so, ensure `CHANGELOG.md` is updated. Use the `view_file` tool to read the active session file (if any) for `<roadmap_item>`. If this branch corresponds to a roadmap item, update `docs/ROADMAP.md`: move the item to Done, add today's date. If unclear, ask the user which roadmap item (if any) this branch completes. Then use the `view_file` tool to read and follow `.cursor/skills/pr-description/SKILL.md` until it yields. 
+        If NOT in Stealth Mode: Remind the user to commit `docs/ROADMAP.md` and `CHANGELOG.md` if they were updated.
+        If in Stealth Mode: Do NOT remind the user to commit any internal docs like ROADMAP or CHANGELOG.</action>
         <yield>[PAUSE - AWAIT CONFIRMATION]</yield>
       </step>
       <step id="4.4">
