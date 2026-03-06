@@ -23,6 +23,7 @@ This file is the **single source of truth** for all file mappings between the ag
 <!-- SYNC_REGISTRY [START] -->
 | Upstream Source | Local Destination | Strategy |
 |:---|:---|:---|
+| skills/hello/SKILL.md | .cursor/skills/hello/SKILL.md | merge |
 | skills/start-task/SKILL.md | .cursor/skills/start-task/SKILL.md | merge |
 | skills/finish-branch/SKILL.md | .cursor/skills/finish-branch/SKILL.md | merge |
 | skills/status-check/SKILL.md | .cursor/skills/status-check/SKILL.md | merge |

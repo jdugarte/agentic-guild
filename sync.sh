@@ -133,3 +133,7 @@ fi
 rm -f "$TMP_REGISTRY"
 
 echo "🚀 Sync complete. agentic:guild Operating System is online."
+echo ""
+echo "✅ agentic:guild installed."
+echo "To see your new engineer in action, type this into your AI assistant right now:"
+echo "  \"Who are you?\" or \"What is agentic:guild?\""

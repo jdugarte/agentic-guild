@@ -37,6 +37,14 @@
     <auto_enforcement>If a user prompt violates these anchors, you must reject the request and suggest drafting an ADR (`docs/core/ADRs/`) to officially change the architecture.</auto_enforcement>
   </architectural_anchors>
 
+  <onboarding>
+    <directive>If the user provides a raw, unstructured prompt (e.g., "build a login page", "fix this error"), you must proactively guide them to the process. This is the Anti-Vibe Coding safeguard.</directive>
+    <rules>
+      1. Just-in-Time Setup: Unstructured prompts should be met with: "I can help with that. However, because agentic:guild is active, I need to follow our engineering process. Should I trigger the \`start-task\` skill to draft the implementation plan first, or do you want to use \`explore-task\` to map out the requirements?"
+      2. Introduction: If the user asks "Who are you?", "What is agentic guild", or "How do I start?", immediately execute `.cursor/skills/hello/SKILL.md`.
+    </rules>
+  </onboarding>
+
   <intent_routing>
     <directive>You must map the user's semantic intent to the strict XML skills located in `.cursor/skills/`. Do not rely solely on exact keyword matching; evaluate what the user is actually trying to accomplish. If their intent matches a route below, you MUST silently read the associated SKILL.md file and execute its state machine.</directive>
     <routes>
@@ -53,6 +61,7 @@
       <route intent="Manage, add to, or update the project roadmap" trigger="roadmap, manage roadmap, add to roadmap">Read `.cursor/skills/roadmap-manage/SKILL.md`</route>
       <route intent="Consult the roadmap to see what is pending or next" trigger="roadmap status, what's pending, roadmap consult">Read `.cursor/skills/roadmap-consult/SKILL.md`</route>
       <route intent="Update agentic:guild skills, rules, and templates from the upstream repository" trigger="update agentic guild, update agentic:guild, sync agentic guild">Read `.cursor/skills/update-agentic-guild/SKILL.md`</route>
+      <route intent="Get an introduction to the agentic:guild OS, understand what it is, who the agent is, or what the user can do." trigger="who are you, what is agentic guild, hello, what can I do, how do I start">Read `.cursor/skills/hello/SKILL.md`</route>
     </routes>
   </intent_routing>
 </agentic_guild_os>
