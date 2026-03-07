@@ -24,12 +24,18 @@
   <pre_flight>
     <directive>Ensure you have a clean workspace before attempting to pull upstream changes.</directive>
     <check>Verify no uncommitted changes exist in the directories you are about to update (.cursor/skills/, docs/ai/, docs/core/, .cursorrules).</check>
-    <action>If there are uncommitted changes that might be lost, pause and suggest the user stash or commit them before proceeding. Do NOT continue until this is resolved. Also check whether `.agenticguild/tmp_update` already exists from an interrupted previous run; if so, mention it — it will be cleaned up in Step 0.1.</action>
+    <action>If there are uncommitted changes that might be lost, pause and suggest the user stash or commit them before proceeding. Do NOT continue until this is resolved. Also check whether `.agenticguild/tmp_update` already exists from an interrupted previous run; if so, mention it — it will be cleaned up in Step 0.2.</action>
   </pre_flight>
 
   <workflow>
-    <phase id="0" name="Fetch Upstream">
+    <phase id="0" name="Pre-Update Checks">
       <step id="0.1">
+        <action>
+          Use the `view_file` tool to quietly read `.agenticguild/config.json`. If it exists and contains `"stealth_mode": true`, remember that you are operating in stealth mode. Do not announce this to the user.
+        </action>
+        <yield>[AUTO-TRANSITION TO 0.2]</yield>
+      </step>
+      <step id="0.2">
         <action>
           Clone the agentic:guild repository into a temporary directory to get the latest files.
           First, remove any leftover temp directory from a previously interrupted run: `rm -rf .agenticguild/tmp_update`
@@ -48,6 +54,8 @@
           - `.cursor/skills/{start-task,finish-branch,harvest-rules,status-check,code-review,audit-compliance,sync-docs,pr-description,roadmap-manage,roadmap-consult,update-agentic-guild,explore-task,process-feedback}`
           - `.agenticguild/active_sessions`
           - `.agenticguild/completed_sessions`
+          
+          If NOT in stealth mode, also ensure these directories exist:
           - `docs/{ai,core,features,audit,guides}` and `docs/core/ADRs`
           - `.github`
         </action>
@@ -55,6 +63,7 @@
       </step>
       <step id="1.2">
         <action>
+          If NOT in stealth mode:
           Guard `.gitignore`: Check if `.gitignore` exists and whether it already contains `.agenticguild/*`.
           - If the entry is missing: Append the following block to `.gitignore` using `replace_file_content` or `write_to_file`:
             ```
@@ -62,6 +71,15 @@
             .agenticguild/*
             !.agenticguild/.gitkeep
             ```
+            
+          If in stealth mode:
+          Guard `.git/info/exclude`: Check if `.git/info/exclude` exists and whether it already contains `.agenticguild/*`.
+          - If the entry is missing: Append the following block to `.git/info/exclude` using `replace_file_content` or `write_to_file`:
+            ```
+            # agentic:guild (Stealth Mode)
+            .agenticguild/*
+            ```
+            
           Ensure `.agenticguild/.gitkeep`, `.agenticguild/active_sessions/.gitkeep`, and `.agenticguild/completed_sessions/.gitkeep` exist as empty files (create directories and files if missing).
         </action>
         <yield>[AUTO-TRANSITION TO 1.3]</yield>
@@ -69,8 +87,8 @@
       <step id="1.3">
         <action>
           Guard `.cursorrules` using the latest `templates/core/AGENTIC_GUILD_RULES.md` from `.agenticguild/tmp_update`:
-          - If `.cursorrules` does not exist: Create it with the contents of `AGENTIC_GUILD_RULES.md`.
-          - If `.cursorrules` exists but does NOT contain `&lt;agentic_guild_os&gt;`: Prepend `AGENTIC_GUILD_RULES.md` to the existing `.cursorrules` content, preserving all existing project-specific rules.
+          - If `.cursorrules` does not exist: Create it with the contents of `AGENTIC_GUILD_RULES.md`. If in Stealth Mode, append `.cursorrules` to `.git/info/exclude` using `echo ".cursorrules" >> .git/info/exclude` (if not already present).
+          - If `.cursorrules` exists but does NOT contain `&lt;agentic_guild_os&gt;`: Prepend `AGENTIC_GUILD_RULES.md` to the existing `.cursorrules` content, preserving all existing project-specific rules. If in Stealth Mode, add a warning to your final summary that `.cursorrules` blocks were added and should be stripped before committing if the team does not want the agentic:guild config.
           - If `.cursorrules` already contains `&lt;agentic_guild_os&gt;` AND the block is identical to the upstream version: Skip silently.
           - If `.cursorrules` already contains `&lt;agentic_guild_os&gt;` AND the block differs from upstream: Add `{ file: ".cursorrules", reason: "agentic:guild OS block has drifted from upstream" }` to the Conflict Queue. Do NOT attempt to resolve it here.
         </action>
@@ -78,6 +96,9 @@
       </step>
       <step id="1.4">
         <action>
+          If in stealth mode: Skip this step entirely to avoid disrupting team workflows. [AUTO-TRANSITION TO 2.1].
+          
+          If NOT in stealth mode:
           Install or update the Git pre-commit hook using `templates/git-hooks/pre-commit-logic.sh` from `.agenticguild/tmp_update`:
           - If `.git/hooks` does not exist: Warn the user this doesn't appear to be a git repo root and skip this step.
           - If `.git/hooks/pre-commit` does not exist: Create it with `#!/bin/bash` as the first line, append the pre-commit logic, and run `chmod +x .git/hooks/pre-commit`.
@@ -97,14 +118,16 @@
           IMPORTANT: Skip any rows for `templates/core/AGENTIC_GUILD_RULES.md` and `templates/git-hooks/pre-commit-logic.sh` — these were already handled with specialized logic in Phase 1.
 
           For each row in the registry with strategy `merge`:
-          - If the file is missing locally: Copy it to its destination. Note it as "added."
+          - If the file is missing locally: Copy it to its destination. Note it as "added." If in Stealth Mode, append the new file path to `.git/info/exclude` using `echo "path/to/file" >> .git/info/exclude` (if not already present).
           - If the file exists locally and is identical to upstream: Skip it silently.
           - If the file exists locally but differs from upstream:
-            - If it's a safe merge (purely additive: new sections, new rules, typo fixes that don't contradict local content): Apply silently using `replace_file_content`. Note it as "merged."
-            - If it's a complex conflict (upstream changes contradict or restructure local content): Add it to the Conflict Queue. Note it as "conflicted."
+            - If in Stealth Mode AND the file is NOT listed in `.git/info/exclude`, skip it entirely to avoid dirtying team-tracked files (e.g., `.github/PULL_REQUEST_TEMPLATE.md`).
+            - Otherwise:
+              - If it's a safe merge (purely additive: new sections, new rules, typo fixes that don't contradict local content): Apply silently using `replace_file_content`. Note it as "merged."
+              - If it's a complex conflict (upstream changes contradict or restructure local content): Add it to the Conflict Queue. Note it as "conflicted."
 
           For each row in the registry with strategy `init`:
-          - If missing locally: Copy it to its destination. Note it as "added."
+          - If missing locally: Copy it to its destination. Note it as "added." If in Stealth Mode, append the new file path to `.git/info/exclude` using `echo "path/to/file" >> .git/info/exclude` (if not already present).
           - If already exists locally: Skip it entirely. Do not compare, diff, or overwrite. These are project-specific files.
 
           Collect all conflicts into the Conflict Queue. Do NOT transition to cleanup until Phase 3 has cleared them.
@@ -140,11 +163,13 @@
       </step>
     </phase>
 
-    <phase id="4" name="Cleanup">
+    <phase id="4" name="Review & Cleanup">
       <step id="4.1">
         <action>
+          Use the `view_file` tool to quietly read `.agenticguild/tmp_update/CHANGELOG.md` to discover what is out in the latest version.
           Clean up the temporary workspace: Run `rm -rf .agenticguild/tmp_update`.
-          Report a clear, conversational summary of everything that happened: files added, files merged, files with conflicts resolved, any housekeeping actions taken (e.g., ".gitignore updated, pre-commit hook installed"), and any init-only files that were skipped because they already existed.
+          Report a clear, conversational summary of everything that happened to the local project: files added, files merged, conflicts resolved, and housekeeping actions taken.
+          Finally, present a "🎉 What's New in agentic:guild" section where you summarize the most exciting new features, improvements, or fixes extracted from the upstream changelog.
         </action>
         <yield>[PAUSE - UPDATE COMPLETE. SKILL COMPLETE]</yield>
       </step>

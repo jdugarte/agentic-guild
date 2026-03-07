@@ -77,6 +77,7 @@ If you've ever thought *"I need this AI to follow the same rules my team follows
 - Every new conversation starts from scratch.
 
 ### After agentic:guild
+- **It actively intercepts vibe coding**, catching unstructured requests (e.g., "build a login page") and redirecting you to the proper planning process.
 - The AI **classifies** every task before it touches anything.
 - It **writes a traceable implementation plan** you approve before the first line of code changes.
 - It uses **Test-Driven Development** by default, enforced by a Correct-by-Construction gate.
@@ -116,6 +117,8 @@ agentic:guild syncs into any existing or new project in seconds.
 curl -s https://raw.githubusercontent.com/jdugarte/agentic-guild/main/sync.sh | bash
 ```
 
+> **Note:** Installing agentic:guild in a company or external repository? Use **[Stealth Mode](#stealth-mode-for-workexternal-repos)** to benefit from the disciplined AI workflow locally, without imposing agentic:guild's file structure and processes on the rest of your team.
+
 The script will:
 - Create a git-ignored `.agenticguild/` memory directory for AI task state
 - Install all skills into `.cursor/skills/`
@@ -136,6 +139,7 @@ These are the documents your AI will be required to consult and obey. Think of t
 Once installed, you trigger skills through your AI assistant naturally:
 
 ```
+"Who are you?"                 → triggers hello (onboarding & system check)
 "Let's start this task"        → triggers start-task
 "Let's explore this feature"   → triggers explore-task
 "Let's finish this branch"     → triggers finish-branch
@@ -143,6 +147,32 @@ Once installed, you trigger skills through your AI assistant naturally:
 ```
 
 The AI handles the rest — structured, gated, auditable.
+
+---
+
+## Stealth Mode (For Work/External Repos)
+
+It is entirely possible—and recommended—to use agentic:guild in "Stealth Mode" when working on company repositories or external projects where you may not want or need to introduce the full agentic:guild file structure to your teammates.
+
+In Stealth Mode, you get the full benefit of a disciplined AI pair programmer enforcing code quality and architecture locally, without affecting the remote repository or company CI pipelines.
+
+### How to install in Stealth Mode
+
+Append `--stealth` to the standard sync script:
+
+```bash
+curl -s https://raw.githubusercontent.com/jdugarte/agentic-guild/main/sync.sh | bash -s -- --stealth
+```
+
+### What Stealth Mode does:
+
+- **Local Git Ignores:** Instead of modifying `.gitignore` (which your team would see), it silently maps all agentic:guild files into your local `.git/info/exclude`. It dynamically contours itself to any folder structures (like `docs/` or `.cursor/skills/`) that might already exist in the repo.
+- **Relaxes Internal Traceability:** The AI drops requirements for `[REQ-ID]` tags in tests or code comments, preventing your codebase from being cluttered with internal metadata.
+- **Suppresses Internal Reminders:** Workflow skills like `finish-branch` will skip reminding you to commit internal state files like `docs/ROADMAP.md` or `CHANGELOG.md`.
+- **Clean PR Drafts:** The `pr-description` skill will formulate standard Open Source-style PRs (using your team's template if one exists) instead of referencing internal agentic documentation.
+- **Skips Git Hooks:** It skips the installation of pre-commit git hooks, ensuring it never interferes with company pipeline tools.
+
+*(Note: If you already have a `.cursorrules` file, the script will append the agentic:guild routing block to it. Be sure to manually omit this block from your commits).*
 
 ---
 

@@ -28,6 +28,15 @@
   </pre_flight>
 
   <workflow>
+    <phase id="0" name="Stealth Check">
+      <step id="0.1">
+        <action>
+          Use the `view_file` tool to quietly read `.agenticguild/config.json`. If it exists and contains `"stealth_mode": true`, remember that you are operating in stealth mode. Do not announce this to the user.
+        </action>
+        <yield>[AUTO-TRANSITION TO 1.1]</yield>
+      </step>
+    </phase>
+
     <phase id="1" name="Interactive Local Review">
       <step id="1.1">
         <action>Use the `view_file` tool to read and follow `.cursor/skills/code-review/SKILL.md` until it yields. Execute the full skill with its own PAUSEs; then return to finish-branch.</action>
@@ -43,17 +52,19 @@
           1. **Complexity & Length**: Cyclomatic complexity > 10 or functions > 60 lines.
           2. **Traceability**: New test blocks missing `[REQ-ID]` tags referencing `docs/core/SPEC.md`.
           3. **Domain Primitives (CbC)**: New or modified code using raw primitive types (String, Integer, raw object/hash) for domain concepts — any value with business meaning such as identifiers, contact data, measurements, or status enums. These should be Value Objects (Ruby) or Branded Types (TypeScript).
+          If NOT in Stealth Mode: Check all 3 categories (Complexity, Traceability, Domain Primitives).
+          If in Stealth Mode: Skip checking for Traceability (`[REQ-ID]`) entirely. Only check Complexity and Domain Primitives.
         </action>
         <yield>
           [PAUSE - REPORT FINDINGS]
-          Conversationally present the findings of the audit across all three checks. Explicitly ask the user if they want you to fix any violations — missing `[REQ-ID]` tags, complexity issues, or domain primitive usages — before proceeding.
+          Conversationally present the findings of the audit. Explicitly ask the user if they want you to fix any violations before proceeding. (Remember: if in stealth mode, you should not be reporting or offering to fix `[REQ-ID]` tags).
           AWAIT COMMAND TO FIX OR PROCEED.
         </yield>
       </step>
       <step id="2.2">
         <action>
           If the user requested fixes in Step 2.1, implement the necessary changes:
-          - Add missing `[REQ-ID]` tags to test blocks.
+          - (If NOT in Stealth Mode) Add missing `[REQ-ID]` tags to test blocks.
           - Refactor functions exceeding 60 lines or cyclomatic complexity > 10.
           - Wrap domain concepts in Value Objects (Ruby) or Branded Types (TypeScript) to replace raw primitive usage.
           Run local tests to verify all changes pass.
@@ -94,20 +105,34 @@
 
     <phase id="4" name="Final Spackle & PR">
       <step id="4.1">
-        <action>Use the `view_file` tool to read and follow `.cursor/skills/sync-docs/SKILL.md` until it yields. The skill analyzes the branch diff and updates any docs that need changes.</action>
+        <action>
+          If NOT in Stealth Mode: Use the `view_file` tool to read and follow `.cursor/skills/sync-docs/SKILL.md` until it yields. The skill analyzes the branch diff and updates any docs that need changes.
+          If in Stealth Mode: Skip `sync-docs` entirely, as automatically modifying architectural documents violates stealth mode constraints.
+        </action>
         <yield>[PAUSE - AWAIT CONFIRMATION TO PROCEED]</yield>
       </step>
       <step id="4.2">
-        <action>Use the `view_file` tool to read and follow `.cursor/skills/harvest-rules/SKILL.md` until it yields. Then return to finish-branch.</action>
+        <action>
+          If NOT in Stealth Mode: Use the `view_file` tool to read and follow `.cursor/skills/harvest-rules/SKILL.md` until it yields. Then return to finish-branch.
+          If in Stealth Mode: Skip `harvest-rules` entirely, as writing tracking rules inferred from Git diffs into tracked files violates stealth mode constraints.
+        </action>
         <yield>[PAUSE - AWAIT CONFIRMATION TO PROCEED]</yield>
       </step>
       <step id="4.3">
-        <action>Check if user-facing changes exist; if so, ensure `CHANGELOG.md` is updated. Use the `view_file` tool to read the active session file (if any) for `<roadmap_item>`. If this branch corresponds to a roadmap item, update `docs/ROADMAP.md`: move the item to Done, add today's date. If unclear, ask the user which roadmap item (if any) this branch completes. Then use the `view_file` tool to read and follow `.cursor/skills/pr-description/SKILL.md` until it yields. Remind the user to commit `docs/ROADMAP.md` if it was updated.</action>
+        <action>
+          If NOT in Stealth Mode: Check if user-facing changes exist; if so, ensure `CHANGELOG.md` is updated. Use the `view_file` tool to read the active session file (if any) for `<roadmap_item>`. If this branch corresponds to a roadmap item, update `docs/ROADMAP.md`: move the item to Done, add today's date. If unclear, ask the user which roadmap item (if any) this branch completes. Remind the user to commit `docs/ROADMAP.md` and `CHANGELOG.md` if they were updated.
+          If in Stealth Mode: Do NOT modify or remind the user about `CHANGELOG.md` or `docs/ROADMAP.md` to avoid altering the external team's tracked documentation.
+          
+          Then (in all modes): use the `view_file` tool to read and follow `.cursor/skills/pr-description/SKILL.md` until it yields.
+        </action>
         <yield>[PAUSE - AWAIT CONFIRMATION]</yield>
       </step>
       <step id="4.4">
         <action>
-          The branch is finished and task knowledge has been synced to the docs (sync-docs and harvest-rules). Conversationally tell the user that and ask: "Would you like me to clear the active task from memory? I'll set the active task to none and archive the session file to `.agenticguild/completed_sessions/` so it's no longer the current task — you can delete that folder or file later if you don't need the record. Reply yes to clear and archive, or no to leave it as-is for now."
+          If NOT in Stealth Mode: The branch is finished and task knowledge has been synced to the docs (sync-docs and harvest-rules). Conversationally tell the user that.
+          If in Stealth Mode: Conversationally tell the user the PR is ready (remember sync-docs and harvest-rules were intentionally skipped).
+          
+          Then (in all modes): Ask: "Would you like me to clear the active task from memory? I'll set the active task to none and archive the session file to `.agenticguild/completed_sessions/` so it's no longer the current task — you can delete that folder or file later if you don't need the record. Reply yes to clear and archive, or no to leave it as-is for now."
         </action>
         <yield>[PAUSE - AWAIT USER CONFIRMATION TO CLEAR TASK FROM MEMORY]</yield>
       </step>

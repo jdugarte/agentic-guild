@@ -32,12 +32,25 @@
   </hard_constraints>
 
   <workflow>
+    <phase id="0" name="Stealth Check">
+      <step id="0.1">
+        <action>
+          Use the `view_file` tool to quietly read `.agenticguild/config.json`. If it exists and contains `"stealth_mode": true`, remember that you are operating in stealth mode. Do not announce this to the user.
+        </action>
+        <yield>[AUTO-TRANSITION TO 1.1]</yield>
+      </step>
+    </phase>
+
     <phase id="1" name="Context & Drafting">
       <step id="1.1">
         <action>
           Determine the default branch (e.g. main, master, develop) from the project. Run git log and git diff of the current branch against that default branch to gather absolute facts (e.g. `git log <default>..HEAD --oneline` and `git diff <default>...HEAD --name-only`).
-          Use the `view_file` tool to read `.github/PULL_REQUEST_TEMPLATE.md` if it exists.
-          Draft the PR description. If this PR likely completes a roadmap item (check branch name or session metadata), add a helpful reminder: "If this closes a roadmap item, ensure `docs/ROADMAP.md` was updated (finish-branch does this) and mention it in the PR."
+          Use the `view_file` tool to check for existing PR templates (e.g. `.github/PULL_REQUEST_TEMPLATE.md` or similar common locations).
+          
+          If you are in Stealth Mode: Draft a standard open-source style PR description based entirely on the diffs and commits. Do NOT include or mention `docs/core/`, `ROADMAP.md`, `[REQ-ID]` tags, ADRs, or internal agentic:guild structures. If the team provides a PR template, fill it out cleanly without agentic:guild metadata.
+          
+          If NOT in Stealth Mode: Draft the structured PR description. If this PR likely completes a roadmap item (check branch name or session metadata), add a helpful reminder: "If this closes a roadmap item, ensure `docs/ROADMAP.md` was updated (finish-branch does this) and mention it in the PR."
+          
           Output the draft in a markdown code block directly in the chat (do not write to a file or copy to clipboard) and pleasantly let the user know it's ready for them to copy.
         </action>
         <yield>[PAUSE - PR DESCRIPTION READY. USER MAY COPY FROM CODE BLOCK. SKILL COMPLETE]</yield>
