@@ -1,0 +1,23 @@
+---
+description: Never launch computerUse/browser/desktop subagents or override the default model
+alwaysApply: true
+---
+
+# No computerUse / No model override
+
+## Absolute prohibitions
+
+1. **Never launch a `computerUse` subagent.** Do not call the Task tool with `subagent_type: "computerUse"`. Do not use Cursor browser tools, desktop tools, simulator tools, or any tool that spawns a browser/desktop/simulator agent. This applies to QA, testing, demos, screenshots, and every other purpose.
+2. **Never set or switch the `model` parameter** on any Task / subagent call. Always let subagents inherit the default (Auto) model. Do not pass `model:` at all.
+3. **Never instruct another agent or skill to do either of the above.**
+
+## How to do browser/UI QA instead
+
+- Write or reuse **headless, scripted tests** appropriate for the project's stack:
+  - Rails: system tests with headless Chrome (Capybara + Selenium)
+  - Flutter: integration tests or widget tests
+  - Web/static: Playwright headless browser tests
+  - React Native: component tests with @testing-library/react-native
+- Run tests via **shell commands** and read stdout/stderr for pass/fail.
+- Save screenshots to `tmp/qa-screenshots/` using the test framework's screenshot API.
+- If something truly requires a human eye, list it as a **manual check for the owner** instead of launching a browser agent.
