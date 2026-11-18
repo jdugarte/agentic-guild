@@ -54,6 +54,7 @@ This file is the **single source of truth** for all file mappings between the ag
 | templates/core/memory_scaffold/pending_refactors.md | .agenticguild/pending_refactors.md | init |
 | templates/core/memory_scaffold/task_template.md | .agenticguild/active_sessions/task_template.md | init |
 | templates/CbC_GENERATION_PROMPT.md | .cursor/templates/CbC_GENERATION_PROMPT.md | merge |
+| templates/rules/no-computer-use.mdc | .cursor/rules/no-computer-use.mdc | merge |
 <!-- SYNC_REGISTRY [END] -->
 
 
