@@ -15,7 +15,7 @@ alwaysApply: true
 
 - Write or reuse **headless, scripted tests** appropriate for the project's stack:
   - Rails: system tests with headless Chrome (Capybara + Selenium)
-  - Flutter: integration tests or widget tests
+  - Flutter: on the Linux cloud VM, use headless widget tests (`flutter test`). `integration_test/` and Maestro need an iOS/Android simulator or device, so they stay owner-local manual checks — agents must not attempt them on the VM.
   - Web/static: Playwright headless browser tests
   - React Native: component tests with @testing-library/react-native
 - Run tests via **shell commands** and read stdout/stderr for pass/fail.
