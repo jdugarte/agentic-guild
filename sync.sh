@@ -13,13 +13,19 @@ trap 'rm -f "$TMP_REGISTRY" "$TMP_DOWNLOAD" .cursorrules.tmp' EXIT
 
 STEALTH_MODE=false
 TRACK_MEMORY=false
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --stealth) STEALTH_MODE=true; shift ;;
-        --track-memory) TRACK_MEMORY=true; shift ;;
-        *) shift ;;
-    esac
+MAX_ARGS=10
+for _ in $(seq 1 "$MAX_ARGS"); do
+  [ "$#" -eq 0 ] && break
+  case "$1" in
+    --stealth) STEALTH_MODE=true ;;
+    --track-memory) TRACK_MEMORY=true ;;
+  esac
+  shift
 done
+if [ "$#" -gt 0 ]; then
+  echo "❌ Too many arguments (maximum $MAX_ARGS)."
+  exit 1
+fi
 
 if [ "$STEALTH_MODE" = true ] && [ "$TRACK_MEMORY" = true ]; then
   echo "ℹ️  Stealth Mode never tracks .agenticguild/ in git; ignoring --track-memory."
@@ -43,6 +49,38 @@ ensure_dir() {
   local dir="$1"
   if [ ! -d "$dir" ]; then
     mkdir -p "$dir"
+  fi
+}
+
+# Handles one row of the registry table: skips headers and existing files, otherwise downloads the file.
+sync_registry_row() {
+  local line="$1" source dest strategy
+
+  [[ "$line" != \|* ]] && return 0
+  [[ "$line" == *"Upstream Source"* ]] && return 0
+  [[ "$line" == *"---"* ]] && return 0
+
+  IFS='|' read -r _ source dest strategy _ <<< "$line"
+  source=$(echo "$source" | xargs)
+  dest=$(echo "$dest" | xargs)
+  strategy=$(echo "$strategy" | xargs)
+  [ -z "$source" ] && return 0
+
+  if [ -e "$dest" ]; then
+    echo "   ⏩ Skipping $dest (already exists; use the update-agentic-guild skill to update it)"
+    return 0
+  fi
+
+  ensure_dir "$(dirname "$dest")"
+  echo "   📄 Adding $dest ($strategy)..."
+  if fetch_to_tmp "$REPO_URL/$source"; then
+    mv "$TMP_DOWNLOAD" "$dest"
+    TMP_DOWNLOAD="$(mktemp)"
+    if [ "$STEALTH_MODE" = true ] && ! grep -qxF "$dest" "$EXCLUDE_FILE"; then
+      echo "$dest" >> "$EXCLUDE_FILE"
+    fi
+  else
+    echo "   ⚠️  Could not download $source; skipped $dest."
   fi
 }
 
@@ -124,41 +162,19 @@ touch .agenticguild/completed_sessions/.gitkeep
 
 # 3. Download files according to the Sync Registry (never overwriting existing files)
 echo "📥 Syncing files from registry..."
+MAX_REGISTRY_ROWS=500
 in_sync_block=false
+row_count=0
 while IFS= read -r line; do
-  # Detect block markers
+  row_count=$((row_count + 1))
+  if [ "$row_count" -gt "$MAX_REGISTRY_ROWS" ]; then
+    echo "❌ SYNC_REGISTRY.md has more than $MAX_REGISTRY_ROWS lines; stopping."
+    exit 1
+  fi
   if [[ "$line" == *"SYNC_REGISTRY [START]"* ]]; then in_sync_block=true; continue; fi
   if [[ "$line" == *"SYNC_REGISTRY [END]"* ]]; then in_sync_block=false; continue; fi
   if ! $in_sync_block; then continue; fi
-
-  # Skip header and separator rows
-  [[ "$line" != \|* ]] && continue
-  [[ "$line" == *"Upstream Source"* ]] && continue
-  [[ "$line" == *"---"* ]] && continue
-
-  # Parse columns
-  IFS='|' read -r _ source dest strategy _ <<< "$line"
-  source=$(echo "$source" | xargs)
-  dest=$(echo "$dest" | xargs)
-  strategy=$(echo "$strategy" | xargs)
-  [ -z "$source" ] && continue
-
-  if [ -e "$dest" ]; then
-    echo "   ⏩ Skipping $dest (already exists; use the update-agentic-guild skill to update it)"
-    continue
-  fi
-
-  ensure_dir "$(dirname "$dest")"
-  echo "   📄 Adding $dest ($strategy)..."
-  if fetch_to_tmp "$REPO_URL/$source"; then
-    mv "$TMP_DOWNLOAD" "$dest"
-    TMP_DOWNLOAD="$(mktemp)"
-    if [ "$STEALTH_MODE" = true ]; then
-      if ! grep -qxF "$dest" "$EXCLUDE_FILE"; then echo "$dest" >> "$EXCLUDE_FILE"; fi
-    fi
-  else
-    echo "   ⚠️  Could not download $source; skipped $dest."
-  fi
+  sync_registry_row "$line"
 done < "$TMP_REGISTRY"
 
 # 4. Inject agentic:guild OS Rules into .cursorrules
