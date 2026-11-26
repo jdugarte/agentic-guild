@@ -35,14 +35,20 @@ section here.
   start `finish-branch` (never started automatically).
 - **`finish-branch`** now runs a full local check pass and opens the Draft PR only after the code
   review and the compliance audit are clean or accepted, loops on the remote review (re-running
-  the full check only if code changed), then harvests rules, syncs docs, updates the PR text, and
+  the full check only after fixes), then harvests rules, syncs docs, updates the PR text, and
   archives the task before reminding you to mark the PR Ready so CI runs. It delegates the audit
-  to `audit-compliance`.
+  to `audit-compliance`. The flow is written as transition tables (`<exits>` rows: reply class,
+  action, next step) instead of prose, and a Draft that is waiting for its remote review can be
+  resumed in a later chat.
 - **`code-review` and `audit-compliance`** stop at every report with the same reply words
   (`FIX`, `ACCEPT`, `APPLY`, `CONTINUE`, `STOP`), review the whole branch on every pass, and
   report only the checks they actually ran. `code-review` now reviews like an independent
   automated PR reviewer: every path, every exit, and every caller of what changed, with a
   severity, a breaking scenario, and a fix for each finding.
+- **`scripts/check.sh`** validates the transition tables of every skill (`scripts/check-flow.sh`:
+  every pause has STOP and OTHER rows, every target exists, every step is reachable, the steps that
+  open the Draft PR can only be entered after the reviews and the full check, nested skills hand control back
+  the way their caller expects) and fails if the git rules differ between skills.
 - **`harvest-rules`** keeps only rules that pass four tests and moves the ledger only after it
   finishes. **`sync-docs`** shows an impact table. **`pr-description`** fills your PR template.
 - **`sync.sh` and `update-agentic-guild`** never overwrite an existing file, write config only

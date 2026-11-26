@@ -243,7 +243,7 @@ agentic:guild is built in the open. If you've built a stack-agnostic skill, impr
 
 To contribute:
 1. Read [`playbooks/EXPECTED_PROJECT_STRUCTURE.md`](playbooks/EXPECTED_PROJECT_STRUCTURE.md) to understand how the repo is organized
-2. Ensure any new skills follow the `<agentic_guild_skill>` XML state-machine format with `[PAUSE]` gateway methodology
+2. Ensure any new skills follow the `<agentic_guild_skill>` XML state-machine format: every step ends in an `<exits>` table (see `skills/finish-branch/SKILL.md`), and `scripts/check.sh` must pass
 3. Open a PR — the `finish-branch` skill will guide you through our own review process
 
 We are building the practices that make AI-assisted development trustworthy. Come build them with us.

@@ -5,15 +5,17 @@
   </skill_definition>
 
   <state_machine_directives>
-    1. NEVER execute more than ONE <step> per response.
-    2. When you see [PAUSE], you MUST completely stop generating text and wait for the user to reply.
-    3. Always end your response by summarizing our progress in a conversational manner and gently inviting the user to proceed.
-    4. REPLY WORDS: `APPLY 1,2` or `APPLY all` (write the chosen rules), `CONTINUE` (decline every candidate; nothing is written), `STOP` (abort; nothing is written and the review ledger is left untouched). `PROCEED` is accepted as a fallback for `CONTINUE`. Free-form replies still work; offer these words.
+    1. STEPS: Execute one `<step>` per response. A step whose `<exits kind="AUTO">` has a matching `WHEN` row continues into that row's target in the same response (it is not a pause). Rows are tried top to bottom and the first match is taken.
+    2. PAUSES: Exits of kind DECISION are pauses. At a pause you MUST completely stop generating text and wait for the owner's reply.
+    3. REPLIES: A reply is read only by the exits table of the step that paused. `STOP` beats every other class. A reply that fits no row except OTHER takes the OTHER row. Never guess a reply into a row it does not fit.
+    4. Always end a response that stops at a pause by summarizing our progress conversationally and gently inviting the owner to reply.
+    5. REPLY CLASSES: `APPLY 1,2` or `APPLY all` (class APPLY: write the chosen rules), the word `CONTINUE` or `PROCEED` (class CONTINUE: decline every candidate; nothing is written; a plain "yes" or "ok" is OTHER, because it does not say whether to apply), `STOP` (class STOP: abort; nothing is written and the review ledger is left untouched). Anything else is OTHER. Offer these words; free-form replies still work.
+    6. END: Standalone, tell the owner harvest is finished (END) or aborted (END-STOPPED) and stop. When invoked from `finish-branch`, return CLOSED (END) or STOPPED (END-STOPPED) to it at once, without pausing; finish-branch decides the next stop. Harvest always asks for approval, in every mode.
   </state_machine_directives>
 
   <hard_constraints>
-    GIT MODES: Read `agent_git` in `.agenticguild/config.json` with `cat` (`suggest` when absent). `suggest`: never run `git commit` or `git push`; when a commit is appropriate, output a suggested message as a plain-text code block and the owner runs git. `commit`: you may run `git commit` on the current feature branch, never `git push`. `cloud`: you may run `git commit` and `git push` on the current feature branch. A hands-off run (as defined in this skill's mode directive; when this skill runs from `finish-branch`, the `finish-branch` definition applies) allows commit and push for that run in any mode.
-    ALWAYS FORBIDDEN in every mode: `git merge`, `git push --force` (and `--force-with-lease`), amending commits that were already pushed, pushing to the default branch, `gh pr merge`, `gh pr close`, `gh pr ready`, `gh release create`, and creating a PR. The only PR you may create is the Draft PR at the finish-branch PR step, and only when the owner chose that step.
+    GIT MODES: Read `agent_git` in `.agenticguild/config.json` with `cat` (`suggest` when absent). `suggest`: never run `git commit` or `git push`; when a commit is appropriate, output a suggested message as a plain-text code block and the owner runs git. `commit`: you may run `git commit` on the current feature branch, never `git push`. `cloud`: you may run `git commit` and `git push` on the current feature branch. A hands-off run allows commit and push for that run in any mode. A run is hands-off when the owner said hands-off for it, or when the mode setting of the workflow it belongs to is hands-off: `start_task_mode` for start-task, `finish_branch_mode` for finish-branch and for every skill finish-branch runs.
+    ALWAYS FORBIDDEN in every mode: `git merge`, `git push --force` (and `--force-with-lease`), amending commits that were already pushed, pushing to the default branch, `gh pr merge`, `gh pr close`, `gh pr ready`, `gh release create`, and creating a PR. The only PR you may create is the Draft PR in finish-branch step 2.5, and only as the `<who_does_what>` of that skill allows.
     SAFE FILE OPERATIONS: Never overwrite or delete an existing file without the user's explicit confirmation. Before any file write, move, or delete, read `docs/ai/SAFE_FILE_OPERATIONS.md` and follow it.
   </hard_constraints>
 
@@ -30,15 +32,17 @@
 
   <workflow>
     <phase id="1" name="Pattern Analysis">
-      <step id="1.0">
+      <step id="1.0" name="Read the evidence">
         <action>
           Read, before forming any candidate: (1) `.agenticguild/review_ledger.md` if it exists (check with `test -e` and read with `cat`; the file is usually ignored by git and invisible to search tools), (2) the active task session notes, and (3) the branch diff (read in step 1.1).
           Treat the ledger as evidence of what went wrong on this branch, not as a list to promote. A ledger entry, a session note, or a diff pattern becomes a candidate only if it passes the four tests in step 1.1.
           If an active task session exists: Use `cat` to read `.agenticguild/current_state.md` and parse `<active_task_pointer>`. If it points to a session filename (e.g. `task_foo.md`) and that file exists at `.agenticguild/active_sessions/` + that filename, read the entire session file. Analyze it for rule-worthy content: conventions, patterns, anti-patterns, "we must/must not" decisions, naming or style choices. Treat these as additional raw candidates, subject to the same four tests.
         </action>
-        <yield>[AUTO-TRANSITION TO 1.1]</yield>
+        <exits kind="AUTO">
+          WHEN otherwise -> 1.1
+        </exits>
       </step>
-      <step id="1.1">
+      <step id="1.1" name="Propose rules">
         <action>
           Read the `git diff` of the current branch against the default branch (e.g. `main`). Use the repository's default branch unless the project uses a different convention.
           Analyze the changes for new error handling, naming conventions, UI patterns, or data structures.
@@ -49,27 +53,45 @@
           (d) No existing rule in `.cursorrules` or in `docs/core/SYSTEM_ARCHITECTURE.md` already covers it. Scan the `docs/` directory and `.cursorrules` to check, and to choose the target file.
           Drop everything else: one-off fixes, single-spot bugs, and notes about one PR. Those stay in the ledger or belong in the changelog or spec if they matter. When unsure whether a candidate passes, drop it: propose fewer rules.
           If the changes imply future work (e.g. a new pattern that will need follow-up features), consider suggesting adding a roadmap item to `docs/ROADMAP.md` via the roadmap-manage skill.
-          Output only the surviving candidates, numbered, each formatted as `[Target File] -> [Proposed Rule Addition]`. Do not show rejected items or the filtering reasoning. If nothing passes, say so plainly and propose no rules; an empty list is a valid result.
+          Output only the surviving candidates, numbered, each formatted as `[Target File] -> [Proposed Rule Addition]`. Do not show rejected items or the filtering reasoning. If nothing passes, say so plainly and propose no rules; an empty list is a valid result, and then only `CONTINUE` and `STOP` apply.
+          Present the numbered survivors and invite `APPLY 1,2` (any numbers) or `APPLY all`. Tell the owner: "Once you reply, I'll apply your choice and then move the review ledger aside and start a fresh one." `CONTINUE` declines every candidate. `STOP` aborts. Nothing is written until the owner replies.
         </action>
-        <yield>
-          [PAUSE - WRITE LOCK ACTIVE. AWAIT APPLY, CONTINUE, OR STOP]
-          Present the numbered survivors and invite `APPLY 1,2` (any numbers) or `APPLY all`. Tell the owner: "Once you reply, I'll apply your choice and then move the review ledger aside and start a fresh one." `CONTINUE` declines every candidate. `STOP` aborts. If no candidates survived, only `CONTINUE` and `STOP` apply.
-        </yield>
+        <exits kind="DECISION">
+          ON APPLY -> 2.1 : write the chosen rules
+          ON CONTINUE -> 2.2 : decline every candidate; nothing is written
+          ON STOP -> END-STOPPED : write nothing; leave `.agenticguild/review_ledger.md` untouched
+          ON OTHER -> SAME : write nothing; say which replies are valid and ask again
+        </exits>
       </step>
     </phase>
 
     <phase id="2" name="Knowledge Commit">
-      <step id="2.1">
+      <step id="2.1" name="Write the approved rules">
         <action>
-          Parse the owner's reply.
-          - `APPLY 1,2` or `APPLY all`: write exactly the selected rules into their target files (e.g., `.cursorrules`, `docs/core/SYSTEM_ARCHITECTURE.md`) with targeted edits (append or insert; never rewrite a whole file). If a number does not match a candidate, ask before writing anything. Then re-read each target file to confirm the rule is present.
-          - `CONTINUE` (or `PROCEED`): write nothing.
-          - `STOP` or an error: write nothing, leave `.agenticguild/review_ledger.md` untouched, and end the skill with `STOP`.
-          - An unclear reply: write nothing, do not end the skill, and ask again: [PAUSE - AWAIT APPLY, CONTINUE, OR STOP] (the next reply is parsed by this step again).
-          Harvest is finished only when the approved rules were written and confirmed, or the owner chose `CONTINUE`. Only then handle the ledger: if `.agenticguild/review_ledger.md` exists, move it to `.agenticguild/completed_sessions/review_ledger_YYYY-MM-DD.md` (add a numeric suffix if that name exists) and start a fresh empty ledger with a `# Review Ledger` header. Never delete the old ledger. Ledger entries that did not result in a rule stay in the moved file.
+          Write exactly the selected rules into their target files (e.g., `.cursorrules`, `docs/core/SYSTEM_ARCHITECTURE.md`) with targeted edits (append or insert; never rewrite a whole file). If a number does not match a candidate, ask before writing anything. Then re-read each target file to confirm the rule is present.
+        </action>
+        <exits kind="AUTO">
+          WHEN an `APPLY` number matches no candidate -> 2.3 : nothing was written
+          WHEN otherwise -> 2.2
+        </exits>
+      </step>
+      <step id="2.2" name="Rotate the ledger">
+        <action>
+          Harvest is finished only when the approved rules were written and confirmed, or the owner chose `CONTINUE`. Only then handle the ledger: if `.agenticguild/review_ledger.md` exists, run `mkdir -p .agenticguild/completed_sessions`, move it to `.agenticguild/completed_sessions/review_ledger_YYYY-MM-DD.md` (add a numeric suffix if that name exists) and start a fresh empty ledger with a `# Review Ledger` header. Never delete the old ledger. Ledger entries that did not result in a rule stay in the moved file.
           Tell the owner that harvest is finished and where the old ledger went.
         </action>
-        <yield>Standalone: [PAUSE - RULES HARVESTED. SKILL COMPLETE] When invoked from `finish-branch`: [END - hand control back to finish-branch at once, without pausing, stating whether harvest closed with `CONTINUE` (rules applied or declined) or `STOP`; finish-branch decides the next stop]</yield>
+        <exits kind="AUTO">
+          WHEN otherwise -> END
+        </exits>
+      </step>
+      <step id="2.3" name="Unknown candidate number">
+        <action>Say which number matched no candidate, show the same numbered list again, and write nothing.</action>
+        <exits kind="DECISION">
+          ON APPLY -> 2.1
+          ON CONTINUE -> 2.2 : decline every candidate
+          ON STOP -> END-STOPPED : write nothing; leave `.agenticguild/review_ledger.md` untouched
+          ON OTHER -> SAME : write nothing; say which replies are valid and ask again
+        </exits>
       </step>
     </phase>
   </workflow>

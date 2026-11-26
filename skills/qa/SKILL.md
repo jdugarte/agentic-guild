@@ -14,8 +14,8 @@
   </state_machine_directives>
 
   <hard_constraints>
-    GIT MODES: Read `agent_git` in `.agenticguild/config.json` with `cat` (`suggest` when absent). `suggest`: never run `git commit` or `git push`; when a commit is appropriate, output a suggested message as a plain-text code block and the owner runs git. `commit`: you may run `git commit` on the current feature branch, never `git push`. `cloud`: you may run `git commit` and `git push` on the current feature branch. A hands-off run (`start_task_mode` or `finish_branch_mode` set to hands-off, or the owner said hands-off for this run) allows commit and push for that run in any mode.
-    ALWAYS FORBIDDEN in every mode: `git merge`, `git push --force` (and `--force-with-lease`), amending commits that were already pushed, pushing to the default branch, `gh pr merge`, `gh pr close`, `gh pr ready`, `gh release create`, and creating a PR. The only PR you may create is the Draft PR at the finish-branch PR step, and only when the owner chose that step.
+    GIT MODES: Read `agent_git` in `.agenticguild/config.json` with `cat` (`suggest` when absent). `suggest`: never run `git commit` or `git push`; when a commit is appropriate, output a suggested message as a plain-text code block and the owner runs git. `commit`: you may run `git commit` on the current feature branch, never `git push`. `cloud`: you may run `git commit` and `git push` on the current feature branch. A hands-off run allows commit and push for that run in any mode. A run is hands-off when the owner said hands-off for it, or when the mode setting of the workflow it belongs to is hands-off: `start_task_mode` for start-task, `finish_branch_mode` for finish-branch and for every skill finish-branch runs.
+    ALWAYS FORBIDDEN in every mode: `git merge`, `git push --force` (and `--force-with-lease`), amending commits that were already pushed, pushing to the default branch, `gh pr merge`, `gh pr close`, `gh pr ready`, `gh release create`, and creating a PR. The only PR you may create is the Draft PR in finish-branch step 2.5, and only as the `<who_does_what>` of that skill allows.
     SAFE FILE OPERATIONS: Never overwrite or delete an existing file without the user's explicit confirmation. Before any file write, move, or delete, read `docs/ai/SAFE_FILE_OPERATIONS.md` and follow it.
     QA SAFETY: (1) Never change product code during a QA pass; a failing row is reported, not fixed. (2) Never claim a row passed unless you ran it and saw the expected result; name every row you did not run and why. (3) Never open a PR or post a comment to host the reviewer record; stage it in the session file. (4) Never write secret values anywhere; refer to environment variables by name only. (5) Never touch anything the profile lists under "never touch" or take any action it lists as forbidden. (6) Never commit screenshots.
   </hard_constraints>
@@ -106,7 +106,7 @@
     6. TENANT, ROLE, AND SCREEN NAMED IN EVERY ROW. A row without all three is incomplete.
     7. MACHINE-PRECISE STEPS. Each step gives exact paths, values, and actions, so another agent or person could repeat it without interpretation.
     8. TEST MISTAKE VERSUS BUG. For each failure say which it is and why. Fix test mistakes in the QA test; report bugs without touching product code.
-    9. REVIEWER RECORDS ARE IMMUTABLE. Once staged, a record is never edited or deleted. A new QA pass creates a new record.
+    9. REVIEWER RECORDS ARE IMMUTABLE. Once staged, a record's content is never edited or deleted; only its delivery marker (`not posted`, then `posted` or `handed to owner`, set by `finish-branch`) may change. A new QA pass creates a new record.
   </qa_rules>
 
   <setup_reference>

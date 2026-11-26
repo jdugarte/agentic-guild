@@ -1,5 +1,5 @@
 #!/bin/bash
-# check.sh — Checks that every skill points to the safe file operations rule, that every finish-branch pause declares a kind, then runs ShellCheck on all shell scripts.
+# check.sh — Checks that every skill points to the safe file operations rule, that the git rules are identical in every skill, that the skill transition tables are valid (check-flow.sh), then runs ShellCheck on all shell scripts.
 
 set -e
 
@@ -14,11 +14,18 @@ for skill in skills/*/SKILL.md; do
   fi
 done
 
-FINISH_BRANCH="skills/finish-branch/SKILL.md"
-bad_pauses=$(grep -oE '\[PAUSE[^]]*\]' "$FINISH_BRANCH" | grep -vE '^\[PAUSE - (QUESTION|DECISION|RESULT|NESTED)(:| )' || true)
-if [ -n "$bad_pauses" ]; then
-  echo "finish-branch has pause markers without a kind (QUESTION, DECISION, RESULT, or NESTED):"
-  echo "$bad_pauses"
+for rule in "GIT MODES:" "ALWAYS FORBIDDEN"; do
+  distinct=$(grep -h "^[[:space:]]*$rule" skills/*/SKILL.md | sed 's/^[[:space:]]*//' | sort -u | wc -l)
+  if [ "$distinct" -gt 1 ]; then
+    echo "The \"$rule\" rule differs between skills; every skill must carry the identical line:"
+    grep -c "^[[:space:]]*$rule" skills/*/SKILL.md | grep -v ':0$' | cut -d: -f1 | while read -r f; do
+      echo "  $(grep -h "^[[:space:]]*$rule" "$f" | sed 's/^[[:space:]]*//' | md5sum | cut -c1-8) $f"
+    done
+    failed=1
+  fi
+done
+
+if ! bash scripts/check-flow.sh; then
   failed=1
 fi
 
