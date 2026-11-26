@@ -5,7 +5,7 @@ This document lists every referenced path, its purpose, and how it fits into the
 > **Sync Mapping:** For the canonical mapping between agentic:guild upstream sources and these local destinations, see [`SYNC_REGISTRY.md`](SYNC_REGISTRY.md). That file drives both `sync.sh` (initial bootstrap) and the `update-agentic-guild` AI skill (ongoing updates).
 
 ## 1. The Agent RAM (Transient Memory)
-*Located in `.agenticguild/` (Gitignored)*
+*Located in `.agenticguild/`. Ignored by git by default; see `track_memory` in section 5.4.*
 | Path | Purpose |
 |------|---------|
 | `current_state.md` | Tracks the active skill, phase, and step. Used to resume tasks. Format: `<active_task_pointer>` = session filename (e.g. `task_foo.md`) or `[NONE]`; `<execution_context>` contains `<active_skill>`, `<current_phase>`, `<current_step>`. When multiple session files exist, the active task pointer MUST be set so status-check and cross-IDE resume work correctly. |
@@ -13,6 +13,10 @@ This document lists every referenced path, its purpose, and how it fits into the
 | `pending_refactors.md` | Logs tech debt discovered outside the scope of a current task. |
 | `active_sessions/task_*.md` | The runtime memory for specific features/bugfixes. |
 | `completed_sessions/` | Archived task session files after branch finish (optional). Created when the user confirms clearing the active task; session is moved here with a date suffix (e.g. `task_foo_YYYY-MM-DD.md`). |
+| `review_ledger.md` | Short-term record of every finding that was fixed during review, compliance, CI, and remote review (Source, Issue, Diagnosis, Outcome, Fix). Read by `harvest-rules`; moved or cleared only after harvest has finished. |
+| `config.json` | Settings for this project (see section 5.4). Tracked whenever Stealth Mode is off. |
+| `source_package.json` | Copy of the upstream `package.json` recorded at sync time; used by the update notice. Tracked whenever Stealth Mode is off. |
+| `backups/` | One backup per file, made before a confirmed destructive operation on an untracked or modified file (see `docs/ai/SAFE_FILE_OPERATIONS.md`). |
 
 ## 2. The Engine (XML Skills)
 *Located in `.cursor/skills/`*
@@ -73,3 +77,14 @@ The `.cursorrules` file contains a `<project_config>` block (from agentic:guild)
 | Key | Purpose |
 |-----|---------|
 | Linter commands | See `docs/ai/code_review_prompt.md` — projects define Quality/Pre-Flight commands there; start-task and code-review read it. |
+
+### 5.4 `.agenticguild/config.json`
+Settings for the project. All keys are optional; an absent key behaves as its default. The file is tracked whenever Stealth Mode is off, so teammates and cloud agents see the same settings.
+| Key | Values | Default | Purpose |
+|-----|--------|---------|---------|
+| `stealth_mode` | `true`, `false` | `false` | Keeps agentic:guild out of the team's tracked files (uses `.git/info/exclude`). |
+| `track_memory` | `true`, `false` | `false` | `false`: everything in `.agenticguild/` is ignored except `.gitkeep`, `config.json`, and `source_package.json`. `true`: also track sessions and logs, and ignore only `current_state.md`, `review_ledger.md`, and `backups/`. Stealth Mode always behaves as `false`. |
+| `agent_git` | `suggest`, `commit`, `cloud` | `suggest` | `suggest`: the agent never commits or pushes and suggests commit messages. `commit`: the agent may commit on the feature branch, never push. `cloud`: the agent may commit and push the feature branch. A hands-off run allows commit and push for that run in any mode. Merge, force-push, amending pushed commits, pushing the default branch, and creating or merging PRs are forbidden in every mode (the one exception is the Draft PR at the finish-branch PR step). |
+| `verification` | `tdd`, `human-review` | `tdd` | `human-review` is for repositories without automated tests: plans have no failing-test steps, requirement IDs live in the spec, and the compliance check skips test traceability. |
+| `start_task_mode` | `stepped`, `hands-off` | `stepped` | Default execution mode of `start-task`. Can also be chosen per run by saying so. |
+| `finish_branch_mode` | `stepped`, `hands-off` | `stepped` | Default mode of `finish-branch`. Can also be chosen per run by saying so. |
