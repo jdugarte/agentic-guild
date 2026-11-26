@@ -37,6 +37,7 @@ This file is the **single source of truth** for all file mappings between the ag
 | skills/update-agentic-guild/SKILL.md | .cursor/skills/update-agentic-guild/SKILL.md | merge |
 | skills/explore-task/SKILL.md | .cursor/skills/explore-task/SKILL.md | merge |
 | skills/process-feedback/SKILL.md | .cursor/skills/process-feedback/SKILL.md | merge |
+| skills/qa/SKILL.md | .cursor/skills/qa/SKILL.md | merge |
 | playbooks/AI_WORKFLOW_PLAYBOOK.md | docs/ai/AI_WORKFLOW_PLAYBOOK.md | merge |
 | playbooks/SAFE_FILE_OPERATIONS.md | docs/ai/SAFE_FILE_OPERATIONS.md | merge |
 | playbooks/EXPECTED_PROJECT_STRUCTURE.md | docs/ai/EXPECTED_PROJECT_STRUCTURE.md | merge |
