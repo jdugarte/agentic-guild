@@ -1,17 +1,21 @@
 <agentic_guild_skill>
   <skill_definition>
     <name>start-task</name>
-    <description>Initiates the process of building a new feature, bugfix, refactor, or chore. Enforces strict QA discovery, implementation planning, and TDD.</description>
+    <description>Executes an explored implementation plan for a new feature, bugfix, refactor, or chore, one step at a time (or hands-off), with test-first discipline. Warns and asks for confirmation when no explored plan exists.</description>
   </skill_definition>
 
   <state_machine_directives>
-    1. NEVER execute more than ONE <step> per response.
+    1. NEVER execute more than ONE <step> per response, EXCEPT in hands-off mode (see directive 9).
     2. When you see [PAUSE], you MUST completely stop generating text and wait for the user to reply.
     3. Always end your response by summarizing our progress in a conversational manner and gently inviting the user to proceed.
     4. CYCLIC EXECUTION: You are permitted to loop backward (e.g. return to Step 3.1 from 3.3) when the workflow dictates it for TDD iteration.
-    5. TDD STRICTNESS: If the user prompts you to write implementation code before a failing test has been confirmed, politely remind them of our strict TDD routine (write failing test first, then make it pass) and ask if they want to proceed with TDD or skip it for now.
-    6. ANTI-CONVERSATIONAL PLANNING: You are strictly FORBIDDEN from generating an implementation plan purely in chat text. You MUST write the `<implementation_plan>` directly to the `.agenticguild/active_sessions/task_[name].md` file on disk.
-    7. ALWAYS use `view_file` to read `.agenticguild/current_state.md` to confirm the active session before generating code.
+    5. TDD STRICTNESS: With `verification: tdd` (the default), if the user prompts you to write implementation code before a failing test has been confirmed, politely remind them of our strict TDD routine (write failing test first, then make it pass) and ask if they want to proceed with TDD or skip it for now. With `verification: human-review` there are no failing-test steps; each step states how the owner verifies the deliverable by reading it.
+    6. ANTI-CONVERSATIONAL PLANNING: You are strictly FORBIDDEN from generating an implementation plan purely in chat text, and this skill never drafts a plan itself. The plan comes from `explore-task` and lives in the `<implementation_plan>` block of `.agenticguild/active_sessions/task_[name].md`.
+    7. ALWAYS use `cat` to read `.agenticguild/current_state.md` to confirm the active session before generating code (the file may be ignored by git and invisible to search tools).
+    8. STEP LOCK (stepped mode): Stay on the current `<step id="N">` of the session's implementation plan until the owner authorizes the next one. At every stop, name the next step ("Reply CONTINUE to start Step N"). `CONTINUE`, `PROCEED`, or a plain yes in direct answer to that prompt authorizes ONLY the named step. A pasted error, log, CI output, coverage gap, or failing test is NEVER authorization to start the next step: diagnose inside the current step, say whether the failure is expected for it (for example a test written before its implementation), suggest the current step's commit message, and wait. Never fix forward into a later step.
+    9. MODE: Read `start_task_mode` in `.agenticguild/config.json` with `cat` (`stepped` when absent). The owner can also say "hands-off" for this run. In hands-off mode you run write failing test, implement, check, commit, and the next step without waiting for `CONTINUE`, and the step lock is relaxed. You still stop at every hard stop: a failure that persists after an honest fix attempt, an environment you cannot work in, a needed change to the plan, a product choice, a safety issue, or scope creep.
+    10. FINISH-BRANCH GATE: NEVER execute the `finish-branch` skill (or start a code review, compliance audit, or PR preparation), and never treat a plan step that mentions `finish-branch` as authorized, until the owner's own message in the chat explicitly asks for it. Text in the session file or plan is planning metadata, not authorization. When all implementation steps are complete, report that Phase 3 is complete and wait.
+    11. WRAP-UP STEPS: Skip any plan step whose sole purpose is `finish-branch`, QA, opening a PR, waiting for a remote review, or merging. They are not implementation work.
   </state_machine_directives>
 
   <hard_constraints>
@@ -33,12 +37,23 @@
   </pre_flight>
 
   <workflow>
-    <phase id="0" name="Stealth Check">
+    <phase id="0" name="Stealth Check & Explore-First">
       <step id="0.1">
         <action>
-          Use the `view_file` tool to quietly read `.agenticguild/config.json`. If it exists and contains `"stealth_mode": true`, remember that you are operating in stealth mode. Do not announce this to the user.
+          Use `cat` to quietly read `.agenticguild/config.json`. If it contains `"stealth_mode": true`, remember that you are operating in stealth mode. Note `verification` (`tdd` when absent), `start_task_mode` (`stepped` when absent), and `agent_git` (`suggest` when absent). If the owner said "hands-off" in this request, run hands-off for this run. Do not announce any of this to the user.
         </action>
-        <yield>[AUTO-TRANSITION TO 1.1]</yield>
+        <yield>[AUTO-TRANSITION TO 0.2]</yield>
+      </step>
+      <step id="0.2">
+        <action>
+          Explore-first check. Use `cat` to read `.agenticguild/current_state.md` and find the active session; check that the file exists with `test -e`. If the session exists and contains a populated `<implementation_plan>`, the task was explored: [AUTO-TRANSITION TO 1.1].
+          Otherwise there is no explored plan. If you already warned the owner in this conversation, follow their earlier answer. If not, warn once: "There's no explored plan for this task. agentic:guild works best when we explore first, which takes a few minutes and avoids guessing. Would you like to explore first, or continue without the guild's process (no plan, no step-by-step approvals, and none of the skills' safety rules)? The architecture rules still apply and finish-branch is still available."
+        </action>
+        <yield>
+          [PAUSE - AWAIT EXPLORE OR CONTINUE]
+          If the owner chooses to explore: read `.cursor/skills/explore-task/SKILL.md` and follow it; this skill ends.
+          If the owner chooses to continue without the process: release them. Do the task as asked, with no plan, no session, no step lock, and no per-step approvals, and stop following this skill's workflow. Keep respecting `docs/core/SYSTEM_ARCHITECTURE.md`. Remind them that `finish-branch` is still available.
+        </yield>
       </step>
     </phase>
 
@@ -68,37 +83,21 @@
       </step>
     </phase>
 
-    <phase id="2" name="Memory Update & Planning">
+    <phase id="2" name="Confirm the Locked Plan">
       <step id="2.1">
         <action>
-          First, check if `.agenticguild/current_state.md` points to an active session file (e.g., passed over from `explore-task`).
-          - If it points to an active session file: Verify the file actually exists before reading it using the `view_file` tool. If the file exists and already contains a populated `<implementation_plan>` block, acknowledge the spec is locked and [AUTO-TRANSITION TO 3.0]. If it exists but the plan is empty/missing, proceed with the drafting steps below.
-          - If no active session is pointed to, or the file is missing: Derive `[name]` as a short, kebab-case slug from the task description and silently create a new session file in `.agenticguild/active_sessions/` named `task_[name].md` using the `write_to_file` tool. If the task came from the roadmap, include `<roadmap_item>` in the session metadata. Silently update `.agenticguild/current_state.md`: set `<active_task_pointer>` to the session filename (e.g. `task_[name].md`) so the active task is unambiguous across IDEs. Write the task classification and description into the session file.
-          Drafting the plan (only if no plan exists yet): You MUST use the `replace_file_content` tool to draft the step-by-step implementation plan directly inside the `<implementation_plan>` block of the `task_[name].md` file ON DISK. Use `<step id="N" status="pending">[Description]</step>` format.
-          VERIFICATION LOCK: Before asking for user approval, you MUST verify the file `task_[name].md` was successfully updated on the filesystem. Before responding to the user, you MUST explicitly state in your response that the file was successfully updated on disk. Do not present the plan if the file does not exist.
-          - If Bugfix: Step 1 MUST be "Write a failing test that reproduces the bug."
-          - If Refactor: Step 1 MUST be "Run existing tests to establish a green baseline."
-          - If Feature: You MUST define Pre-conditions and Post-conditions for any new core functions. Each step in the plan must explicitly mandate writing a test before implementation.
-          Present the drafted plan to the user conversationally and ask if they are happy with it or if we should tweak anything before proceeding.
+          Use `cat` to read `.agenticguild/current_state.md` and find the active session file; verify it exists with `test -e` and read it with `cat`. If it contains a populated `<implementation_plan>` block, acknowledge that the spec is locked and [AUTO-TRANSITION TO 3.0].
+          If the plan is empty or missing, do not draft one here. Tell the owner the task needs an explored plan, point them to `explore-task`, and wait.
         </action>
-        <yield>[PAUSE - AWAIT PLAN APPROVAL]</yield>
+        <yield>[PAUSE - NO EXPLORED PLAN, OR AUTO-TRANSITION TO 3.0]</yield>
       </step>
       <step id="2.2">
         <action>
-          Parse the user's response to determine intent.
-          1. First, process the intent:
-            - If they want to discard or completely rewrite the plan for the current task: Delete the existing `<implementation_plan>` block from the `task_[name].md` session file so it can be cleanly redrafted, and [AUTO-TRANSITION TO 2.1].
-            - If they want a completely different task: Delete `.agenticguild/current_state.md` so the old task is no longer active, and [AUTO-TRANSITION TO 1.1].
-            - If they rejected the plan without direction, said "start over" (which is ambiguous), or their response is otherwise ambiguous: Ask clarifying questions to determine if they want to rewrite the current plan or reconsider the task completely. (STOP processing further steps).
-            - If they suggested tweaks: Update the `task_[name].md` session file `<implementation_plan>` with the requested modifications. If the tweak changes the task classification (e.g., to Bugfix), ensure you also update the classification metadata.
-            - If they approved the plan as-is: Treat the current `<implementation_plan>` as ready for validation.
-          2. Next, validate the active plan (if they approved or tweaked): Verify the plan is not empty. Verify it strictly conforms to the classification rules from Step 2.1 (e.g., mandatory Step 1 for Bugfix/Refactor, and test-first steps for Features). 
-          3. Finalize: 
-            - If the plan fails validation (or is empty): Automatically rewrite the plan in the session file to fix the violation, and present this corrected plan to the user for confirmation. (To prevent an infinite loop, if you have already attempted an automatic rewrite for this validation error before, STOP and ask the user to manually help fix the plan).
-            - If the user suggested tweaks AND the plan passes validation: Ask them to confirm the updated plan.
-            - If the user approved the plan as-is AND it passes validation: [AUTO-TRANSITION TO 3.0].
+          Plan changes. If at any point the owner wants to discard or rewrite the plan: append the existing `<implementation_plan>` block to `.agenticguild/active_sessions/task_[name]_history.md` (create that file only if `test -e` shows it is free; otherwise append), then send the owner back to `explore-task` to redraft it. Never delete the old plan.
+          If the owner wants a completely different task: reset `<active_task_pointer>` and the `<execution_context>` fields in `.agenticguild/current_state.md` to `[NONE]` with a targeted edit (never delete the file), leave the old session file where it is, and [AUTO-TRANSITION TO 1.1].
+          If their response is ambiguous (for example "start over"): ask whether they want to rewrite the current plan or reconsider the task completely, and stop.
         </action>
-        <yield>[PAUSE - AWAIT PLAN APPROVAL OR AUTO-TRANSITION TO 3.0]</yield>
+        <yield>[PAUSE - AWAIT OWNER DECISION ON THE PLAN CHANGE]</yield>
       </step>
     </phase>
 
@@ -107,31 +106,29 @@
         <action>
           TYPE DEFINITION GATE — Run this step ONCE at the start of Phase 3.
           First, check the task classification from the active session file:
-          - If classification is Bugfix, Refactor, or Chore: Domain types already exist or are not relevant to this task. [AUTO-TRANSITION TO 3.1] immediately. Do not ask the user anything.
+          - If classification is Bugfix, Refactor, or Chore, or the task only touches Markdown under `verification: human-review`: Domain types already exist or are not relevant. [AUTO-TRANSITION TO 3.1] immediately. Do not ask the user anything.
           - If classification is Feature: Continue with the steps below.
-          Use the `view_file` tool to read the active session file. Check if a `## Domain Model` section already exists (populated by `explore-task`).
-          - If a Domain Model section exists: Present the already-defined Value Objects / Branded Types to the user for confirmation. Ask if they want to add, rename, or remove any types before we begin writing tests.
-          - If no Domain Model section exists: Analyze the implementation plan steps and derive the domain types this feature introduces. For each domain concept that would otherwise be a raw primitive (String, Integer, etc.), propose the appropriate wrapper type:
-            - Ruby: propose Value Object classes with validation in the initializer.
-            - TypeScript: propose Branded Types (e.g. `type UserId = string & { readonly __brand: 'UserId' }`).
-            Present the proposed types to the user and ask for approval or modifications.
-          Once the user approves the types: Use the `replace_file_content` tool to write or update the `## Domain Model` section in the session file with the approved types. Confirm the file was updated, then [AUTO-TRANSITION TO 3.1].
-          NOTE: Do NOT write any application code or tests in this step. The only output is the type proposal and the session file update.
+          Use `cat` to read the active session file. Check if a `## Domain Model` section already exists (populated by `explore-task`).
+          - If a Domain Model section exists (or states "none" with a reason): Present the already-defined Value Objects / Branded Types to the user for confirmation. Ask if they want to add, rename, or remove any types before we begin writing tests. In hands-off mode, confirm them and continue.
+          - If no Domain Model section exists: treat that as a hole in the exploration. Ask "Explore this, or define a thin model here?" and do not silently invent a large Domain Model.
+          Once the types are confirmed: use a targeted edit to update the `## Domain Model` section in the session file with the approved types. Confirm the file was updated, then [AUTO-TRANSITION TO 3.1].
+          NOTE: Do NOT write any application code or tests in this step. The only output is the type confirmation and the session file update.
         </action>
-        <yield>[PAUSE - AWAIT TYPE DEFINITION APPROVAL (Feature tasks only — all others auto-transition)]</yield>
+        <yield>[PAUSE - AWAIT TYPE DEFINITION APPROVAL (Feature tasks only; all others auto-transition; in hands-off mode, continue after confirming)]</yield>
       </step>
       <step id="3.1">
         <action>
-          You MUST use the `view_file` tool to physically read the `.agenticguild/active_sessions/task_[name].md` file from disk. Do NOT rely on memory. Find the next step with `status="pending"`.
-          Write the failing test for this step only.
-          
-          If NOT in Stealth Mode: Tag the test with the appropriate [REQ-ID] from `docs/core/SPEC.md` (format: `REQ-[DOMAIN]-[NNN]`, e.g. `REQ-AUTH-001`; projects may customize).
-          If in Stealth Mode: Do NOT add `[REQ-ID]` tags, keeping the tests clean for the external repo.
-          
+          Use `cat` to physically read the `.agenticguild/active_sessions/task_[name].md` file from disk. Do NOT rely on memory. Find the next step with `status="pending"` that is an implementation step (skip wrap-up steps, see directive 11).
+          With `verification: tdd`: write the failing test for this step only.
+          With `verification: human-review`: do not write a test; state the deliverable of this step and how the owner will verify it by reading it.
+
+          If NOT in Stealth Mode and `verification` is `tdd`: Tag the test with the appropriate [REQ-ID] from `docs/core/SPEC.md` (format: `REQ-[DOMAIN]-[NNN]`, e.g. `REQ-AUTH-001`; projects may customize).
+          If in Stealth Mode, or `verification` is `human-review`: Do NOT add `[REQ-ID]` tags to tests (stealth keeps external repos clean; in a human-review project the requirement IDs live in the spec).
+
           If the test involves a domain concept, use the Value Objects / Branded Types approved in Step 3.0 — never raw primitives.
-          Show the user the failing test and ask if they're ready to proceed and make it pass.
+          Show the user the failing test (or the deliverable and its verification) and, in stepped mode, ask if they're ready to proceed: "Reply CONTINUE to make it pass." In hands-off mode, continue straight to Step 3.2.
         </action>
-        <yield>[PAUSE - AWAIT TEST APPROVAL]</yield>
+        <yield>[PAUSE - AWAIT TEST APPROVAL (stepped mode only; hands-off continues)]</yield>
       </step>
       <step id="3.2">
         <action>
@@ -146,19 +143,25 @@
              - Cyclomatic complexity ≤ 10.
              - Every new public method must be traceable to a REQ-ID from `docs/core/SPEC.md` (Unless in Stealth Mode, then skip traceability requirements).
           3. REFLECTION GATE: Before outputting the code, you MUST execute the `<reflection>` step from the template — critique your own proposed implementation against each constraint. If any violation is found, fix the code first. Follow the `<output_format>` rule in the template: show the reflection block only if violations were found and corrected. If everything passes, output only the corrected code with no reflection commentary.
-          Write the minimum application code required to make the failing test pass.
+          Write the minimum application code required to make the failing test pass (or, under `human-review`, to produce the step's deliverable).
           Ensure you do not violate `docs/core/SYSTEM_ARCHITECTURE.md`.
-          Run the project's linters/checkers. If `docs/ai/code_review_prompt.md` exists, use the `view_file` tool to read it for project-specific commands (e.g. Quality or Pre-Flight section); otherwise run the project's standard linters.
-          You MUST use the `replace_file_content` tool to physically update the step's status to 'complete' in the session file.
-          Let the user know you've successfully passed the step, and invite them to move on to the next.
+          Run the project's linters/checkers. If `docs/ai/code_review_prompt.md` exists, use `cat` to read it for project-specific commands (e.g. Quality or Pre-Flight section); otherwise run the project's standard linters. Claim "verified" or "passed" only for commands you actually ran, and name any you did not run. In `suggest` or `commit` mode outside hands-off, ask the owner to run them and report the result as not yet verified until they confirm.
+          Use a targeted edit to update the step's status to `complete` in the session file.
+          Commit message: the first line starts with the step number and a colon, for example `Step 7: ship the filter drawer`. In `suggest` mode output it as a plain-text code block for the owner to run; in `commit` or `cloud` mode, or in hands-off, commit with it.
+          Stepped mode: let the user know the step passed and name the next step ("Reply CONTINUE to start Step N"). Hands-off mode: go straight to Step 3.3.
         </action>
-        <yield>[PAUSE - AWAIT COMMAND TO PROCEED TO NEXT TDD STEP OR FINISH]</yield>
+        <yield>[PAUSE - AWAIT COMMAND TO PROCEED TO THE NEXT NAMED STEP (stepped mode only; hands-off continues)]</yield>
       </step>
       <step id="3.3">
         <action>
-          If more steps remain in the `<implementation_plan>` with `status="pending"`, return to Step 3.1. Otherwise, pleasantly let the user know that Phase 3 is complete and suggest running the `finish-branch` skill to wrap up.
+          Scan the `<implementation_plan>` in the active session file. If more implementation steps remain with `status="pending"`, return to Step 3.1.
+          If all implementation steps are complete (a wrap-up step may remain pending; do not start it), send one closing message with three parts:
+          1. Report that implementation is complete and the full test suite has been run. Run it yourself in `cloud` mode or in hands-off; in `suggest` or `commit` mode ask the owner to run it and report it as not yet verified. Under `verification: human-review`, skip this part.
+          2. Ask one QA question. If `docs/ai/qa_profile.md` exists (check with `test -e`): "Do you want to run QA?" If it does not: "Do you want to set up QA?" This question always stops for the owner's answer, even in hands-off mode.
+          3. Say the owner can start `finish-branch` whenever they are ready, and wait. Never start it yourself.
+          If the owner says yes to QA (or to the setup), read `.cursor/skills/qa/SKILL.md` and follow it; afterwards wait for the owner to ask for `finish-branch`.
         </action>
-        <yield>[PAUSE - PHASE 3 COMPLETE OR PROCEED TO NEXT STEP]</yield>
+        <yield>[PAUSE - PHASE 3 COMPLETE. AWAIT THE OWNER'S ANSWER ABOUT QA OR THEIR REQUEST FOR FINISH-BRANCH]</yield>
       </step>
     </phase>
   </workflow>
