@@ -36,12 +36,12 @@
 
   <who_does_what>
     This is the only place that says who acts in each git mode; steps refer to it instead of repeating it.
-    A PR tool means a tool you have that can create a Draft PR and edit its body. Read-only `gh` does not count; use it only to check whether a PR exists.
+    A PR tool means a tool you have that can create a Draft PR, edit its body, and post comments on it. If your tool cannot do one of these, give the owner the text for that action instead. Read-only `gh` does not count; use it only to check whether a PR exists.
     AGENT-RUN means `agent_git: cloud` or a hands-off run of this skill (directive 6). OWNER-RUN means `suggest` or `commit` outside a hands-off run.
     - Run the full check: AGENT-RUN, you run it and report exactly what ran (claim "passed" only for commands you ran). OWNER-RUN, the owner runs it and reports back.
     - Commit: in `commit` or `cloud` mode or a hands-off run, you commit on the feature branch. In `suggest` mode outside hands-off, output a suggested commit message.
     - Push: in `cloud` mode or a hands-off run, you push, following PUSH TIMING. Otherwise give the owner the push command to run.
-    - Open the Draft PR, or update its body: in a hands-off run with a PR tool, you do it. In `cloud` mode outside hands-off with a PR tool, you do it after the owner says yes (opening only; body updates need no extra question). Otherwise give the owner the text and ask them to do it.
+    - Open the Draft PR, update its body, or post a comment on it (the QA record): in a hands-off run with a PR tool, you do it. In `cloud` mode outside hands-off with a PR tool, you do it after the owner says yes (opening only; body updates and comments need no extra question). Otherwise give the owner the text and ask them to do it.
   </who_does_what>
 
   <pause_kinds>
@@ -56,9 +56,9 @@
     1. Run the project's full test and check suite and any quality or check commands listed in `docs/ai/code_review_prompt.md`. Under `verification: human-review`, run only documented linters and checks; if there are none, say so: the check ends passed with no pause, in every mode.
     2. AGENT-RUN: run it yourself. If it fails, fix the failure, log the fix in `.agenticguild/review_ledger.md` with Source "Full check", commit (and push per PUSH TIMING), and run it again. If it still fails after an honest fix attempt, stop retrying and show the failing output: [PAUSE - RESULT: the full check still fails. Valid replies: guidance (I use it for one more fix attempt and run the check again), or ACCEPT (I record the failure in the session under `## Review disposition` with the failing output, and the check ends accepted).]
     3. OWNER-RUN: ask the owner to run it. [PAUSE - RESULT: please run the full check. Valid replies: green or `CONTINUE` (the check ends passed), pasted failing output (I fix it, log it, commit or suggest the commit message, and ask you to run it again), or ACCEPT (I record the failure in the session under `## Review disposition`, and the check ends accepted).]
-    4. The check ENDS ACCEPTED when it passed (green, or `CONTINUE` at the OWNER-RUN pause) or when the owner replied ACCEPT. Return to the step that started FULL-CHECK, which says where to go next. Record `git rev-parse HEAD` at that moment as the baseline; step 2.4 records it again once the work is committed and pushed, so the owner's own commit of the checked work does not count as a change. "Code changed since FULL-CHECK last ended accepted" means `git diff <baseline>` (which includes uncommitted changes) touches any file other than Markdown docs.
+    4. The check ENDS ACCEPTED when it passed (green, or `CONTINUE` at the OWNER-RUN pause) or when the owner replied ACCEPT. Return to the step that started FULL-CHECK, which says where to go next. Record the baseline at that moment as a snapshot of the whole working tree, including uncommitted and untracked files, without touching the real index: `tmp=$(mktemp -u) && GIT_INDEX_FILE=$tmp git add -A && GIT_INDEX_FILE=$tmp git write-tree; rm -f "$tmp"` (it prints a tree ID). A later commit of the same checked content gives the same tree, so it does not count as a change. Step 2.5 records it again the same way. "Code changed since FULL-CHECK last ended accepted" means: take a new snapshot the same way, and `git diff --name-only <baseline tree> <new tree>` lists any file other than Markdown docs.
 
-    FIX-FINDINGS (pasted review findings or CI errors): analyze them and fix the real issues (ignore noise and false positives after a brief note). Findings the owner accepts (`ACCEPT n`) are not fixed: record each in the session under `## Review disposition`. For each fixed issue, silently append an entry to `.agenticguild/review_ledger.md` (check with `test -e`; create if missing; never overwrite): **Source** ("CI check", "Remote review", or "Local review"), **Issue**, **Diagnosis/Why it failed**, **Outcome** (fixed), **Fix**. Run the project's checks (claim "verified" only for commands you ran), commit, and push per `<who_does_what>` and PUSH TIMING. If the fixes change user-visible behavior, update `CHANGELOG.md` and the PR description as needed (not in Stealth Mode). Mention that a manual re-run of the remote reviewer is worthwhile now because code changed (never post it yourself).
+    FIX-FINDINGS (pasted review findings or CI errors): analyze them and fix the real issues (ignore noise and false positives after a brief note). Findings the owner accepts (`ACCEPT n`) are not fixed: record each in the session under `## Review disposition`. For each fixed issue, silently append an entry to `.agenticguild/review_ledger.md` (check with `test -e`; create if missing; never overwrite): **Source** ("CI check", "Remote review", or "Local review"), **Issue**, **Diagnosis/Why it failed**, **Outcome** (fixed), **Fix**. Run the project's checks (claim "verified" only for commands you ran), commit, and push per `<who_does_what>` and PUSH TIMING. Only when a PR for this branch exists (from step 2.5 on, or earlier if one already existed when finish-branch started; check with the PR tool, a read-only `gh pr view`, or the owner's word): if the fixes change user-visible behavior, update `CHANGELOG.md` and the PR description as needed (not in Stealth Mode), and mention that a manual re-run of the remote reviewer is worthwhile now because code changed (never post it yourself). When no PR exists yet, skip both.
   </procedures>
 
   <workflow>
@@ -121,14 +121,24 @@
           Gate: enter only after FULL-CHECK in step 2.3 ended accepted.
           Commit any uncommitted work and push it, per `<who_does_what>` (PUSH TIMING allows it here).
           Check whether a PR already exists for this branch (with the PR tool or a read-only `gh pr view` when available; otherwise the owner tells you at the pause below). If one exists, use it. Otherwise open a Draft PR (never a ready PR) per `<who_does_what>`, using the PR description from `.cursor/skills/pr-description/SKILL.md` (the filled PR template) as the body.
-          Once the Draft is open (or already existed), before going to step 3.1: if QA ran and the session holds a staged `## QA reviewer record` not yet marked as posted, post it once on the Draft per `<who_does_what>` (or give the owner the text; in Stealth Mode never post it, only give the owner the text) and mark it posted in the session with a targeted edit (never repost one already marked posted); then record `git rev-parse HEAD` as the new FULL-CHECK baseline (the pushed commit) and update `.agenticguild/current_state.md` with a targeted edit to indicate waiting for remote review (keep `<active_task_pointer>` unchanged).
+          Every way out of this step goes to step 2.5 (post-Draft bookkeeping) before the remote review loop.
         </action>
         <yield>
-          You opened the Draft (hands-off with a PR tool), or a PR already existed and you pushed: [AUTO-TRANSITION TO 3.1].
-          A PR already existed and the owner must push (OWNER-RUN): [PAUSE - RESULT: please push the branch. Valid replies: pushed or `CONTINUE` (go to step 3.1), or pasted remote review findings or CI errors (the Draft is open: first finish this step's post-Draft bookkeeping above, then run FIX-FINDINGS, then go to step 3.1).]
-          `cloud` outside hands-off with a PR tool: [PAUSE - QUESTION: open the Draft PR now? Valid answers: yes (I open it, then go to step 3.1) or no (end finish-branch without a PR).]
-          The owner opens it: [PAUSE - RESULT: please push the branch and open the Draft with the text above. Valid replies: it is open, its link, a PR already existed, or `CONTINUE` (go to step 3.1); or pasted remote review findings or CI errors (the Draft is open: first finish this step's post-Draft bookkeeping above, then run FIX-FINDINGS, then go to step 3.1).]
+          You opened the Draft (hands-off with a PR tool), or a PR already existed and you pushed: [AUTO-TRANSITION TO 2.5].
+          A PR already existed and the owner must push (OWNER-RUN): [PAUSE - RESULT: please push the branch. Valid replies: pushed or `CONTINUE` (go to step 2.5), or pasted remote review findings or CI errors (go to step 2.5, which handles them).]
+          `cloud` outside hands-off with a PR tool: [PAUSE - QUESTION: open the Draft PR now? Valid answers: yes (I open it, then go to step 2.5) or no (end finish-branch without a PR).]
+          The owner opens it: [PAUSE - RESULT: please push the branch and open the Draft with the text above. Valid replies: it is open, its link, a PR already existed, or `CONTINUE` (go to step 2.5); or pasted remote review findings or CI errors (go to step 2.5, which handles them).]
         </yield>
+      </step>
+      <step id="2.5">
+        <action>
+          Post-Draft bookkeeping, run once each time the flow leaves step 2.4, in this order:
+          1. Record the FULL-CHECK baseline again (same snapshot method as FULL-CHECK item 4), before any further fix.
+          2. If QA ran and the session holds a staged `## QA reviewer record` not yet marked as delivered (`posted` or `handed to owner`), post it once on the Draft per `<who_does_what>` (or give the owner the text; in Stealth Mode never post it, only give the owner the text) and mark it in the session with a targeted edit: `posted` if you posted it, `handed to owner` if you only gave the text. Either counts as delivered; never repost or re-offer a delivered record.
+          3. Update `.agenticguild/current_state.md` with a targeted edit to indicate waiting for remote review (keep `<active_task_pointer>` unchanged).
+          4. If the owner pasted remote review findings or CI errors at the step 2.4 pause, run FIX-FINDINGS on them now.
+        </action>
+        <yield>[AUTO-TRANSITION TO 3.1]</yield>
       </step>
     </phase>
 

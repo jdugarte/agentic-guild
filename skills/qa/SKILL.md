@@ -88,7 +88,7 @@
       <step id="4.1">
         <action>
           Present one report with four parts: (1) Prerequisites (ready or missing); (2) the Matrix; (3) Execution results per row (passed, failed, owner to run, not run, with reasons); (4) a paste-ready reviewer record in plain text, listing what was tested, the results, the environment, and what was not run.
-          Stage the reviewer record in the active session file under a `## QA reviewer record` heading with a targeted edit. A later QA run adds a new record under a new dated heading; never edit or delete an earlier record. Mark it `not posted`; `finish-branch` posts it once on the Draft PR and marks it `posted`.
+          Stage the reviewer record in the active session file under a `## QA reviewer record` heading with a targeted edit. A later QA run adds a new record under a new dated heading; never edit or delete an earlier record. Mark it `not posted`; `finish-branch` delivers it once on the Draft PR and marks it `posted`, or `handed to owner` when it only gives the owner the text.
           Finish by telling the owner they can start `finish-branch` whenever they are ready, and wait. If there are product bugs, say they need fixing first (through `start-task`) and offer to re-run QA afterward.
         </action>
         <yield>[PAUSE - QA COMPLETE. AWAIT THE OWNER'S NEXT REQUEST (finish-branch or fixes)]</yield>
