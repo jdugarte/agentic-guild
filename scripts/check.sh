@@ -1,5 +1,5 @@
 #!/bin/bash
-# check.sh — Checks that every skill points to the safe file operations rule, that finish-branch names exactly the waiting states its table defines, then runs ShellCheck on all shell scripts.
+# check.sh — Checks that every skill points to the safe file operations rule, that every finish-branch pause declares a kind, then runs ShellCheck on all shell scripts.
 
 set -e
 
@@ -15,23 +15,10 @@ for skill in skills/*/SKILL.md; do
 done
 
 FINISH_BRANCH="skills/finish-branch/SKILL.md"
-outside_table=$(awk '/^  <waiting_states>$/ {skip=1; next} /^  <\/waiting_states>$/ {skip=0; next} !skip' "$FINISH_BRANCH")
-state_names() {
-  local text
-  text=$(cat)
-  { grep -oE '\b[A-Z]+(-[A-Z]+)*-(WAIT|DONE|PAUSE)\b' <<< "$text" || true; grep -oE 'STATE [A-Z]+(-[A-Z]+)*' <<< "$text" | sed 's/^STATE //' || true; } | sort -u
-}
-defined_states=$(grep -oE '^    \| [A-Z]+(-[A-Z]+)* \(' "$FINISH_BRANCH" | sed -E 's/^ +\| //; s/ \($//' | sort -u)
-named_anywhere=$(state_names < "$FINISH_BRANCH")
-named_in_steps=$(state_names <<< "$outside_table")
-undefined_states=$(comm -13 <(echo "$defined_states") <(echo "$named_anywhere"))
-unused_states=$(comm -23 <(echo "$defined_states") <(echo "$named_in_steps"))
-if [ -n "$undefined_states" ]; then
-  echo "finish-branch names waiting states that are not in its table: $undefined_states"
-  failed=1
-fi
-if [ -n "$unused_states" ]; then
-  echo "finish-branch defines waiting states that no directive, pre-flight, or step names: $unused_states"
+bad_pauses=$(grep -oE '\[PAUSE[^]]*\]' "$FINISH_BRANCH" | grep -vE '^\[PAUSE - (QUESTION|DECISION|RESULT|NESTED)(:| )' || true)
+if [ -n "$bad_pauses" ]; then
+  echo "finish-branch has pause markers without a kind (QUESTION, DECISION, RESULT, or NESTED):"
+  echo "$bad_pauses"
   failed=1
 fi
 
