@@ -47,11 +47,13 @@ for skill in skills/*/SKILL.md; do
     /^[ \t]*<exits kind="/ {
       match($0, /kind="[^"]*"/); kind = substr($0, RSTART + 6, RLENGTH - 7)
       if (!(kind in okkind)) err("step " step ": unknown exits kind " kind)
-      exitcount[step]++; inexits = 1; hasStop = 0; hasOther = 0; hasClosed = 0; hasStopped = 0; lastRow = ""; nrows = 0
+      exitcount[step]++; inexits = 1; delete classesInStep; hasStop = 0; hasOther = 0; hasClosed = 0; hasStopped = 0; lastRow = ""; nrows = 0
       next
     }
     /^[ \t]*<\/exits>/ {
       inexits = 0
+      if (("YES" in classesInStep) && ("CONTINUE" in classesInStep)) err("step " step ": a pause lists both YES and CONTINUE; they overlap, so list one")
+      if (("YES" in classesInStep) && ("PASS" in classesInStep)) err("step " step ": a pause lists both YES and PASS; they overlap, so list one")
       if (kind == "AUTO") { if (lastRow !~ /^WHEN otherwise/) err("step " step ": AUTO exits must end with a WHEN otherwise row") }
       else if (kind == "NESTED") { if (!hasClosed || !hasStopped) err("step " step ": NESTED exits need ON CLOSED and ON STOPPED rows") }
       else if (kind in okkind) { if (!hasStop || !hasOther) err("step " step ": " kind " exits need ON STOP and ON OTHER rows") }
@@ -64,6 +66,7 @@ for skill in skills/*/SKILL.md; do
       if (row ~ /^ON /) {
         split(row, w, " "); cls = w[2]
         if (!(cls in okclass)) err("step " step ": unknown reply class " cls)
+        classesInStep[cls] = 1; usedClass[cls] = 1
         if (cls == "STOP") hasStop = 1
         if (cls == "OTHER") hasOther = 1
         if (cls == "CLOSED") hasClosed = 1
@@ -116,14 +119,22 @@ for skill in skills/*/SKILL.md; do
       }
       for (i = 2; i <= nsteps; i++) { s = order[i]; if (!(s in seen)) err("step " s " is unreachable from the first step") }
       for (s in nested) print "NESTED " s " " nested[s]
+      for (cl in usedClass) print "CLASS " cl
       if (bad) print "BAD"
     }
   ' "$skill")
 
   if echo "$errors" | grep -q "^BAD"; then
-    echo "$errors" | grep -v "^BAD" | grep -v "^NESTED"
+    echo "$errors" | grep -v "^BAD" | grep -v "^NESTED" | grep -v "^CLASS"
     failed=1
   fi
+
+  while read -r _ cls; do
+    if ! grep -qE "^[[:space:]]*([A-Z-]+, )*${cls}(, [A-Z-]+)*:|class ${cls}[: )]|is ${cls}" "$skill"; then
+      echo "$skill: reply class $cls is used in a table but never defined in the skill"
+      failed=1
+    fi
+  done < <(echo "$errors" | grep "^CLASS")
 
   while read -r _ step name; do
     [ -n "$name" ] || continue

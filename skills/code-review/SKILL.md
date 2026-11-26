@@ -9,7 +9,7 @@
     2. PAUSES: Exits of kind DECISION, QUESTION, or RESULT are pauses. At a pause you MUST completely stop generating text and wait for the owner's reply.
     3. REPLIES: A reply is read only by the exits table of the step that paused, using the reply classes below. `STOP` beats every other class. A reply that fits no row except OTHER takes the OTHER row. Never guess a reply into a row it does not fit.
     4. Always end a response that stops at a pause by summarizing our progress conversationally and gently inviting the owner to reply.
-    5. REPLY CLASSES: `FIX 1,3`, `FIX all`, `FIX all except 2` (class FIX: apply the chosen findings); `ACCEPT 2` (class ACCEPT: leave those findings as they are); a bare `ACCEPT` (class ACCEPT-CHECK: accept committing with a failing check); `another pass` (class PASS); `CONTINUE` or `PROCEED` (class CONTINUE: close the review; green check results also count); `STOP` (class STOP: end without further changes); pasted failing check output (class FINDINGS); instructions for another attempt (class GUIDANCE); anything else is OTHER. Offer these words; free-form replies still work.
+    5. REPLY CLASSES: `FIX 1,3`, `FIX all`, `FIX all except 2` (class FIX: apply the chosen findings); `ACCEPT 2` (class ACCEPT: leave those findings as they are); a bare `ACCEPT` (class ACCEPT-CHECK: accept committing with a failing check); yes, `another pass`, or `again` (class PASS: run another pass); `no` (class NO: do not run another pass; closes the loop); `CONTINUE` or `PROCEED` (class CONTINUE: close the review; green check results also count); `STOP` (class STOP: end without further changes); pasted failing check output (class FINDINGS); instructions for another attempt (class GUIDANCE); anything else is OTHER. Offer these words; free-form replies still work.
     6. MODE: When this skill runs from `finish-branch`, the mode of `finish-branch` applies (`finish_branch_mode` in `.agenticguild/config.json`, `stepped` when absent, or the owner's word for that run). Standalone, the run is hands-off only when the owner says "hands-off" for it (for example "code review hands-off"); the config setting does not apply. In both modes every report stops for the owner's choice. In hands-off mode only, a fix round that passes its checks is committed and the next pass over the whole branch runs in the same response (step 2.1), and the run stops at the new report.
     7. DISPOSITIONS: Findings left unfixed and failing checks the owner accepted are recorded under `## Review disposition` in the active session file (targeted edits only; use `cat` to read it, since it may be ignored by git). When there is no active session, record them under the same heading at the end of `.agenticguild/review_ledger.md` (create the file if missing, never overwrite it).
     8. END: Standalone, tell the owner the review loop is closed (END) or stopped (END-STOPPED) and stop. When invoked from `finish-branch`, return CLOSED (END) or STOPPED (END-STOPPED) to it at once, without pausing; finish-branch decides the next stop.
@@ -98,6 +98,7 @@
         <action>Tell the owner which findings were fixed, that the ledger is updated, and the result of the checks. Then ask whether to run another pass over the whole branch.</action>
         <exits kind="QUESTION">
           ON PASS -> 1.1
+          ON NO -> 2.2 : close the review
           ON CONTINUE -> 2.2 : close the review
           ON FIX -> 2.1 : findings still open from the last report
           ON ACCEPT -> 2.1 : findings still open from the last report
@@ -128,11 +129,11 @@
       </step>
       <step id="2.2" name="Close the loop" close-step="true">
         <action>
-          If the owner replied `CONTINUE`: record every finding left unfixed under `## Review disposition` as accepted (targeted edit), so later passes do not raise it again unless its code changes; then confirm the review loop is closed and name those findings.
+          If the owner replied `CONTINUE` or no: record every finding left unfixed under `## Review disposition` as accepted (targeted edit), so later passes do not raise it again unless its code changes; then confirm the review loop is closed and name those findings.
           If the owner replied `STOP`: confirm the loop is stopped and name any findings still open.
         </action>
         <exits kind="AUTO">
-          WHEN the owner closed the review with CONTINUE -> END
+          WHEN the owner closed the review (CONTINUE or no) -> END
           WHEN otherwise (the owner stopped) -> END-STOPPED
         </exits>
       </step>

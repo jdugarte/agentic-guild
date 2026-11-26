@@ -31,7 +31,8 @@
 
   <reply_classes>
     How each class is recognized. Each pause lists the classes it accepts; the owner may word them freely.
-    CONTINUE: `CONTINUE`, `PROCEED`, yes, green, done, pushed, resolved. `YES` is the same class.
+    CONTINUE: `CONTINUE`, `PROCEED`, yes, green, done, pushed, resolved. Used by pauses that report an outcome or ask to move on.
+    YES: yes, ok, sure, `CONTINUE`, `PROCEED`: an answer to a yes/no question. "Done", "green", "pushed", and "resolved" are not YES. A pause lists YES or CONTINUE, never both.
     OPEN: "open", "it is open", or a link to the PR (the Draft exists). Never CONTINUE.
     NO: no, or declining the offer.
     STOP: `STOP`.
@@ -297,7 +298,7 @@
         <action>Ask the owner to confirm the PR text, the docs just synced, and the roadmap item (in Stealth Mode only the PR text).</action>
         <exits kind="QUESTION">
           ON YES -> 4.6
-          ON FINDINGS -> FX.1 return 4.5
+          ON FINDINGS -> FX.1 return 4.10 : fix them, run the full check, then ask this question again
           ON STOP -> END-STOPPED
           ON OTHER -> SAME : a requested edit (PR text, docs, or the roadmap item name, or none) is made and the question asked again; anything else is answered briefly and asked again
         </exits>
@@ -307,7 +308,7 @@
         <exits kind="QUESTION">
           ON YES -> 4.7
           ON NO -> 4.8
-          ON FINDINGS -> FX.1 return 4.6
+          ON FINDINGS -> FX.1 return 4.11 : fix them, run the full check, then ask this question again
           ON STOP -> END-STOPPED
           ON OTHER -> SAME : answer briefly, ask again
         </exits>
@@ -331,6 +332,18 @@
         <action>Remind the owner to mark the PR Ready for review so the final CI check runs. Do not suggest re-running the remote reviewer after docs-only changes. Never mark the PR Ready yourself and never merge.</action>
         <exits kind="AUTO">
           WHEN otherwise -> END
+        </exits>
+      </step>
+      <step id="4.10" name="Full check after late findings (confirm)">
+        <action>A fix round ran after the remote review was clear. Run the full check again before asking again (the remote reviewer is not waited for again; mention that a manual re-run is worthwhile if code changed).</action>
+        <exits kind="AUTO">
+          WHEN otherwise -> FC.1 return 4.5
+        </exits>
+      </step>
+      <step id="4.11" name="Full check after late findings (archive)">
+        <action>A fix round ran after the remote review was clear. Run the full check again before asking again (the remote reviewer is not waited for again; mention that a manual re-run is worthwhile if code changed).</action>
+        <exits kind="AUTO">
+          WHEN otherwise -> FC.1 return 4.6
         </exits>
       </step>
     </phase>
