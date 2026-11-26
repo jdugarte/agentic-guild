@@ -74,6 +74,7 @@
       <step id="2.5.1">
         <action>
           Gate: continue only if both the code review and the compliance audit closed with `CONTINUE`. If either ended with `STOP` or has not run, do not proceed: tell the owner which check is outstanding and invite them to re-run it. No PR is created before this gate passes.
+          Re-entry after the pause: if you last paused here asking for the full check result, the owner's reply is the check result, read before anything else: pasted failing output means failed, a green confirmation means passed, and `CONTINUE` means accept and proceed to step 2.5.2. Do not re-evaluate the gate or restart the check unless the reply reports a failure. If you stopped in hands-off because a failure persisted, the reply is guidance for the next fix attempt.
           Full check before the Draft PR: because CI checks usually do not run on draft PRs, run the project's full test and check suite now so any failure is fixed locally before opening the Draft (if `docs/ai/code_review_prompt.md` lists quality or check commands, run those too; under `verification: human-review`, run only documented linters/checks and skip automated tests, or note that none exist and continue).
           - `agent_git: cloud` or hands-off: run the full check yourself and report what ran (claim "passed" only for commands you actually ran). If anything fails, fix it, log the fix in `.agenticguild/review_ledger.md` if applicable, re-run the full check, and commit until it passes (in hands-off, stop if a failure persists after an honest fix attempt). Once green, [AUTO-TRANSITION TO 2.5.2].
           - `agent_git: suggest` or `commit` outside hands-off: ask the owner to run the full check and report the result (do not claim it passed and do not prompt for the Draft PR yet). If the owner reports failures, fix them, log them in `.agenticguild/review_ledger.md` if applicable, commit (in `commit` mode) or suggest a commit message (in `suggest` mode), and ask the owner to re-run — stay in step 2.5.1. Advance to step 2.5.2 only after the owner confirms the full check is green (or explicitly replies `CONTINUE` to proceed anyway).
@@ -86,6 +87,7 @@
       <step id="2.5.2">
         <action>
           Gate: enter only after step 2.5.1 confirmed the full check is green (or the owner explicitly replied `CONTINUE` to proceed anyway).
+          Re-entry after the pause: if you asked "Do you want me to open the Draft PR now?", `yes` opens it and `no` or `STOP` ends finish-branch; if the owner was to open the Draft themselves, any confirmation that it is open (or `CONTINUE`) moves on to step 3.1. If the reply instead pastes remote review findings or CI errors, the Draft is already open: move on to step 3.1 and handle them there as case A of step 3.2.
           Make sure the work is committed and pushed first, within the git rules (PUSH TIMING: pushes are allowed before the Draft exists):
           - `suggest` mode outside hands-off: output the git commit and push commands as a plain-text code block for the owner to run.
           - `commit` mode outside hands-off: commit any uncommitted changes and ask the owner to push.
