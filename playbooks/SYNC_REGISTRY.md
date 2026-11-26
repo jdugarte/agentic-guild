@@ -9,7 +9,7 @@ This file is the **single source of truth** for all file mappings between the ag
 
 | Strategy | Behavior |
 |:---------|:---------|
-| `merge`  | Always apply the latest upstream version. For `sync.sh`: always overwrite. For `update-agentic-guild`: additive changes are applied automatically; conflicting changes trigger the Interactive Conflict Resolution Protocol. |
+| `merge`  | Apply the latest upstream version. For `sync.sh`: write only when the file does not exist yet (an existing file is never overwritten; use `update-agentic-guild` to update it). For `update-agentic-guild`: additive changes are applied automatically; conflicting changes trigger the Interactive Conflict Resolution Protocol. Nothing is overwritten or removed without the user's explicit confirmation (see `docs/ai/SAFE_FILE_OPERATIONS.md`). |
 | `init`   | Only write if the file does **not** already exist locally. These files contain project-specific content that must be protected from upstream overwrites. |
 
 > **Special files not in this registry** (they require custom logic beyond a simple copy):
@@ -38,6 +38,7 @@ This file is the **single source of truth** for all file mappings between the ag
 | skills/explore-task/SKILL.md | .cursor/skills/explore-task/SKILL.md | merge |
 | skills/process-feedback/SKILL.md | .cursor/skills/process-feedback/SKILL.md | merge |
 | playbooks/AI_WORKFLOW_PLAYBOOK.md | docs/ai/AI_WORKFLOW_PLAYBOOK.md | merge |
+| playbooks/SAFE_FILE_OPERATIONS.md | docs/ai/SAFE_FILE_OPERATIONS.md | merge |
 | playbooks/EXPECTED_PROJECT_STRUCTURE.md | docs/ai/EXPECTED_PROJECT_STRUCTURE.md | merge |
 | playbooks/SYNC_REGISTRY.md | docs/ai/SYNC_REGISTRY.md | merge |
 | package.json | .agenticguild/source_package.json | merge |
