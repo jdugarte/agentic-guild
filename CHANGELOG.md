@@ -9,6 +9,8 @@ section here.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-25
+
 ### Added
 
 - **Settings in `.agenticguild/config.json`:** `agent_git` (suggest, commit, or cloud), `verification`
