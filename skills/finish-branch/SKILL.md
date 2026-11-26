@@ -1,14 +1,19 @@
 <agentic_guild_skill>
   <skill_definition>
     <name>finish-branch</name>
-    <description>Handles the completion of a branch, PR creation, and continuous CI/Bot feedback loops.</description>
+    <description>Handles the completion of a branch: code review, compliance audit, the Draft PR, CI check and remote review loops, rule harvest, docs, and archive. Runs stepped (every report stops for the owner) or hands-off (the review loops chain automatically after each owner choice).</description>
   </skill_definition>
 
   <state_machine_directives>
-    1. NEVER execute more than ONE <step> per response.
+    1. NEVER execute more than ONE <step> per response, except where a nested skill (`code-review`, `audit-compliance`) chains its own fix and re-review rounds in hands-off mode.
     2. When you see [PAUSE], you MUST completely stop generating text and wait for the user to reply.
     3. CYCLIC EXECUTION: You are permitted to loop backward between steps if the workflow dictates it.
     4. Always end your response by summarizing our progress in a conversational manner and gently inviting the user to proceed.
+    5. REPLY WORDS: `FIX 1,3` or `FIX all`, `FIX all except 2`, `ACCEPT 2`, `APPLY 1,2` or `APPLY all` (rule harvest), `CONTINUE` (move on; `PROCEED` is accepted), `STOP` (end without further changes). Free-form replies still work; offer these words.
+    6. MODE: Read `finish_branch_mode` in `.agenticguild/config.json` with `cat` (`stepped` when absent). The owner can also say "finish branch hands-off" for this run. In BOTH modes every report from `code-review` and `audit-compliance` stops for the owner's choice. In hands-off mode only: after the owner's choice, the nested skill applies the fixes, updates the review ledger, runs the checks, commits, and runs the next pass over the whole branch automatically, then stops at the new report; and the "ready to move on?" pauses between phases are skipped. These still stop in hands-off mode: the `sync-docs` confirmation, the `harvest-rules` approval, the wait for CI check and remote review results, the question about clearing the task, any finding that needs a product or architecture decision, and every action the git rules forbid.
+    7. REMOTE REVIEW: Some remote reviewers (for example Bugbot) review a PR only once. Never trigger the remote reviewer yourself, and never post its re-run comment unless the owner explicitly asks. Never suggest a re-run after docs-only changes. Tell the owner when a manual re-run is worthwhile: when code changed after the review.
+    8. PUSH TIMING (applies when the git mode or hands-off allows pushing): Before the Draft PR exists, commit and push as work finishes. After the Draft exists, push only (a) at each CI check or remote review fix round and (b) once at the very end, after the documentation and archive steps, with no pushes in between. In a hands-off run, run `git pull --rebase` on the feature branch before each push; if it conflicts, stop and ask, and never force-push. In stepped mode, if a push is rejected, report it to the owner and wait; the owner tells you to pull and rebase.
+    9. PR TIMING: NEVER create a PR before the code review and the compliance audit have both closed with `CONTINUE` (clean, or with remaining findings explicitly named and accepted). The Draft PR is created only at step 2.5.1. Never mark a PR Ready and never merge.
   </state_machine_directives>
 
   <hard_constraints>
@@ -32,114 +37,121 @@
     <phase id="0" name="Stealth Check">
       <step id="0.1">
         <action>
-          Use the `view_file` tool to quietly read `.agenticguild/config.json`. If it exists and contains `"stealth_mode": true`, remember that you are operating in stealth mode. Do not announce this to the user.
+          Use `cat` to quietly read `.agenticguild/config.json`. If it contains `"stealth_mode": true`, remember that you are operating in stealth mode. Note `finish_branch_mode` (`stepped` when absent) and `agent_git` (`suggest` when absent). If the owner said "hands-off" in this request, run hands-off for this run. Do not announce any of this to the user.
+          Check whether `docs/core/BEHAVIOUR_MATRIX.md` exists with `test -e`. If it does, the behaviour matrix coverage check (phase 0.5) applies; otherwise skip it.
         </action>
-        <yield>[AUTO-TRANSITION TO 1.1]</yield>
+        <yield>[AUTO-TRANSITION TO 0.5.1 if the behaviour matrix file exists, otherwise TO 1.1]</yield>
+      </step>
+    </phase>
+
+    <phase id="0.5" name="Behaviour Matrix Coverage (only when docs/core/BEHAVIOUR_MATRIX.md exists)">
+      <step id="0.5.1">
+        <action>
+          Determine the audit scope: the feature(s) named in the active session plus every feature touched by the branch diff. If the scope is unclear, audit all rows. Classify each in-scope row by its status: `automated` (a test path exists), `manual-only` (an explicit reason is documented), `planned` (no test and not marked manual-only: a gap), or `n/a` (excluded with a rationale).
+          Report the counts and list every `planned` row. A `planned` row blocks the review unless the owner writes the missing test now, marks the row `manual-only` with a reason, or consciously defers it with a note. If every in-scope row is `automated`, `manual-only`, or `n/a`, confirm the coverage and [AUTO-TRANSITION TO 1.1].
+        </action>
+        <yield>[PAUSE - AWAIT RESOLUTION OF EACH PLANNED ROW (auto-transition if there are none)]</yield>
       </step>
     </phase>
 
     <phase id="1" name="Interactive Local Review">
       <step id="1.1">
-        <action>Use the `view_file` tool to read and follow `.cursor/skills/code-review/SKILL.md` until it yields. Execute the full skill with its own PAUSEs; then return to finish-branch.</action>
-        <yield>[PAUSE - AWAIT CODE REVIEW COMPLETION]</yield>
+        <action>Use the `view_file` tool to read and follow `.cursor/skills/code-review/SKILL.md`. Execute the full skill, including its own stops, until the owner replies `CONTINUE` (clean, or with any remaining findings explicitly named and accepted) or `STOP`. On `STOP`, end finish-branch. In hands-off mode, hand directly to Phase 2 without an extra pause; in stepped mode, confirm the result and pause.</action>
+        <yield>[PAUSE - AWAIT CODE REVIEW COMPLETION (stepped mode; hands-off continues to 2.1 after CONTINUE)]</yield>
       </step>
     </phase>
 
     <phase id="2" name="Compliance & Traceability Audit">
       <step id="2.1">
         <action>
-          Use the `view_file` tool to read `docs/core/deterministic_coding_standards.md`.
-          Analyze the branch diff to check for:
-          1. **Complexity & Length**: Cyclomatic complexity > 10 or functions > 60 lines.
-          2. **Traceability**: New test blocks missing `[REQ-ID]` tags referencing `docs/core/SPEC.md`.
-          3. **Domain Primitives (CbC)**: New or modified code using raw primitive types (String, Integer, raw object/hash) for domain concepts — any value with business meaning such as identifiers, contact data, measurements, or status enums. These should be Value Objects (Ruby) or Branded Types (TypeScript).
-          If NOT in Stealth Mode: Check all 3 categories (Complexity, Traceability, Domain Primitives).
-          If in Stealth Mode: Skip checking for Traceability (`[REQ-ID]`) entirely. Only check Complexity and Domain Primitives.
+          Use the `view_file` tool to read and follow `.cursor/skills/audit-compliance/SKILL.md`. Execute the full skill, including its own stops, until the owner replies `CONTINUE` (clean, or with any remaining findings explicitly named and accepted) or `STOP`. The audit covers complexity and function length, test traceability (skipped in Stealth Mode and under `verification: human-review`), and domain primitives (CbC), as defined by `docs/core/deterministic_coding_standards.md`. On `STOP`, end finish-branch. In hands-off mode, hand directly to Phase 2.5; in stepped mode, confirm the result and pause.
         </action>
-        <yield>
-          [PAUSE - REPORT FINDINGS]
-          Conversationally present the findings of the audit. Explicitly ask the user if they want you to fix any violations before proceeding. (Remember: if in stealth mode, you should not be reporting or offering to fix `[REQ-ID]` tags).
-          AWAIT COMMAND TO FIX OR PROCEED.
-        </yield>
-      </step>
-      <step id="2.2">
-        <action>
-          If the user requested fixes in Step 2.1, implement the necessary changes:
-          - (If NOT in Stealth Mode) Add missing `[REQ-ID]` tags to test blocks.
-          - Refactor functions exceeding 60 lines or cyclomatic complexity > 10.
-          - Wrap domain concepts in Value Objects (Ruby) or Branded Types (TypeScript) to replace raw primitive usage.
-          Run local tests to verify all changes pass.
-        </action>
-        <yield>
-          [PAUSE - AWAIT COMMAND]
-          If fixes were applied: Inform the user that all compliance and CbC fixes have been applied. Ask if they want to review the changes or proceed to the next phase.
-          If the user declined to fix reported violations: Acknowledge their choice and note which violations remain outstanding. Ask if they are ready to proceed to the next phase.
-          If no violations were found: Confirm the audit is clean and ask if they are ready to proceed to the next phase.
-        </yield>
+        <yield>[PAUSE - AWAIT COMPLIANCE AUDIT COMPLETION (stepped mode; hands-off continues to 2.5.1 after CONTINUE)]</yield>
       </step>
     </phase>
 
-    <phase id="3" name="Remote Async Review (The BugBot Loop)">
+    <phase id="2.5" name="Draft PR">
+      <step id="2.5.1">
+        <action>
+          Gate: continue only if both the code review and the compliance audit closed with `CONTINUE`. If either ended with `STOP` or has not run, do not proceed: tell the owner which check is outstanding and invite them to re-run it. No PR is created before this gate passes.
+          Make sure the work is committed and pushed first, within the git rules (PUSH TIMING: pushes are allowed before the Draft exists).
+          If a PR already exists for this branch, use it. Otherwise, open a Draft PR (never a ready PR):
+          - Manual (default; the agent has no PR permission): tell the owner it is time to open the Draft PR now, and give them the PR description from `.cursor/skills/pr-description/SKILL.md` (the filled PR template) to paste.
+          - `agent_git: cloud` outside hands-off: ask "Do you want me to open the Draft PR now?" and wait for the answer. On yes, create a Draft with the PR tool, using the filled PR template as the body.
+          - Hands-off: open the Draft PR automatically when you have a PR tool; otherwise tell the owner to open it.
+          If QA ran for this task and the session holds a staged QA reviewer record under `## QA reviewer record` that is not yet marked as posted: post it once on the Draft PR (manual mode: give the owner the text to paste), then mark it as posted in the session with a targeted edit. A later QA run produces a new comment; never edit or delete the older one. Never repost a comment that is already marked as posted.
+          Update `.agenticguild/current_state.md` with a targeted edit to indicate waiting for CI check and remote review (retain `<active_task_pointer>` unchanged).
+        </action>
+        <yield>[PAUSE - AWAIT THE DRAFT PR (manual and cloud question); hands-off continues to 3.1]</yield>
+      </step>
+    </phase>
+
+    <phase id="3" name="Remote Review Loop (CI check and remote review)">
       <step id="3.1">
         <action>
-          Instruct the user to commit their code, push to the remote branch, and wait for CI feedback.
-          Update `.agenticguild/current_state.md` to indicate waiting status (e.g. in `<execution_context>`). Retain `<active_task_pointer>` unchanged so status-check and resume still know which task is active.
+          Tell the owner the Draft PR is waiting for the CI check and the remote review (the remote reviewer reviews the Draft once, automatically). Ask them to paste any CI check errors or remote review findings, or to reply `CONTINUE` if both are clear.
         </action>
         <yield>
-          [PAUSE - AWAIT CI STATUS]
-          Conversationally ask the user to paste any CI/BugBot errors here, or confirm if CI is passing.
+          [PAUSE - AWAIT CI CHECK AND REMOTE REVIEW STATUS]
         </yield>
       </step>
       <step id="3.2">
         <action>
-          Parse the user's input from Step 3.1 to determine their intent:
-          - If they provided CI/BugBot errors: Analyze the errors, write the fixes, and run local tests.
-          - If they confirmed that CI is passing: Skip any fixes.
+          Parse the owner's input:
+          - If they pasted errors or findings: analyze them, fix the real issues (ignore noise and false positives after a brief note), and for EACH fixed issue silently append an entry to `.agenticguild/review_ledger.md` (check with `test -e`; create if missing; never overwrite): **Source** ("CI check" or "Remote review"), **Issue**, **Diagnosis/Why it failed**, **Outcome** (fixed), **Fix**. Run the project's checks (claim "verified" only for commands you ran), commit, and push if the git rules allow it (PUSH TIMING (a)). If the fixes change user-visible behavior, also touch up `CHANGELOG.md` and the PR description text as needed (not in Stealth Mode). Then wait for the next CI check result; mention that a manual re-run of the remote reviewer is worthwhile now because code changed (never post it yourself).
+          - If they replied `CONTINUE` (CI check and remote review are clear): skip fixes. In hands-off mode, first run one full pass of all tests and checks and report it (claim "passed" only for what ran); a failure is fixed as one more fix round above. Then [AUTO-TRANSITION TO 4.1].
+          - If they replied `STOP`: end finish-branch without making further changes.
         </action>
         <yield>
-          [PAUSE - AWAIT COMMAND]
-          If fixes were applied: Let the user know the fixes are applied and that you'd like them to re-verify CI status (Silently update state to 3.1).
-          If CI is green: Let the user know we're ready to proceed to the final spackle and PR phase, and ask if they want to move forward.
+          If fixes were applied: [PAUSE - AWAIT CI CHECK STATUS] (silently set the state back to 3.1).
+          If the CI check and remote review are clear: tell the owner we are ready for the final docs and archive steps; in stepped mode ask `CONTINUE` to move forward or `STOP` to end ([PAUSE - AWAIT CONTINUE OR STOP]); in hands-off mode continue to 4.1.
         </yield>
       </step>
     </phase>
 
-    <phase id="4" name="Final Spackle & PR">
+    <phase id="4" name="Harvest, Docs & Close-out">
       <step id="4.1">
         <action>
-          If NOT in Stealth Mode: Use the `view_file` tool to read and follow `.cursor/skills/sync-docs/SKILL.md` until it yields. The skill analyzes the branch diff and updates any docs that need changes.
-          If in Stealth Mode: Skip `sync-docs` entirely, as automatically modifying architectural documents violates stealth mode constraints.
+          If NOT in Stealth Mode: Use the `view_file` tool to read and follow `.cursor/skills/harvest-rules/SKILL.md`, including its own stops (`APPLY`, `CONTINUE`, or `STOP`). If the owner replies `STOP`, end finish-branch without clearing the active task or the ledger. Harvest runs before the docs so that the docs step can skip rules harvest just wrote.
+          If in Stealth Mode: Skip `harvest-rules` entirely, as writing tracking rules inferred from Git diffs into tracked files violates stealth mode constraints, and move directly to step 4.2.
         </action>
-        <yield>[PAUSE - AWAIT CONFIRMATION TO PROCEED]</yield>
+        <yield>[PAUSE - AWAIT CONTINUE (the harvest approval always stops)]</yield>
       </step>
       <step id="4.2">
         <action>
-          If NOT in Stealth Mode: Use the `view_file` tool to read and follow `.cursor/skills/harvest-rules/SKILL.md` until it yields. Then return to finish-branch.
-          If in Stealth Mode: Skip `harvest-rules` entirely, as writing tracking rules inferred from Git diffs into tracked files violates stealth mode constraints.
+          If NOT in Stealth Mode: Use the `view_file` tool to read and follow `.cursor/skills/sync-docs/SKILL.md` until it yields. The skill analyzes the branch diff and the session and updates any docs that need changes.
+          If in Stealth Mode: Skip `sync-docs` entirely, as automatically modifying architectural documents violates stealth mode constraints.
         </action>
-        <yield>[PAUSE - AWAIT CONFIRMATION TO PROCEED]</yield>
+        <yield>[PAUSE - AWAIT CONFIRMATION TO PROCEED (the docs confirmation always stops)]</yield>
       </step>
       <step id="4.3">
         <action>
-          If NOT in Stealth Mode: Check if user-facing changes exist; if so, ensure `CHANGELOG.md` is updated. Use the `view_file` tool to read the active session file (if any) for `<roadmap_item>`. If this branch corresponds to a roadmap item, update `docs/ROADMAP.md`: move the item to Done, add today's date. If unclear, ask the user which roadmap item (if any) this branch completes. Remind the user to commit `docs/ROADMAP.md` and `CHANGELOG.md` if they were updated.
+          If NOT in Stealth Mode: Check if user-facing changes exist; if so, ensure `CHANGELOG.md` is updated. Use `cat` to read the active session file (if any) for `<roadmap_item>`. If this branch corresponds to a roadmap item, update `docs/ROADMAP.md`: move the item to Done, add today's date. If unclear, ask the user which roadmap item (if any) this branch completes.
           If in Stealth Mode: Do NOT modify or remind the user about `CHANGELOG.md` or `docs/ROADMAP.md` to avoid altering the external team's tracked documentation.
-          
-          Then (in all modes): use the `view_file` tool to read and follow `.cursor/skills/pr-description/SKILL.md` until it yields.
+
+          Then (in all modes): use the `view_file` tool to read and follow `.cursor/skills/pr-description/SKILL.md` until it yields. The filled PR template is the PR body: update the Draft PR body with the final text (with the PR tool in `cloud` mode or hands-off; otherwise give the owner the text to paste).
         </action>
         <yield>[PAUSE - AWAIT CONFIRMATION]</yield>
       </step>
       <step id="4.4">
         <action>
-          If NOT in Stealth Mode: The branch is finished and task knowledge has been synced to the docs (sync-docs and harvest-rules). Conversationally tell the user that.
+          If NOT in Stealth Mode: The branch is finished and task knowledge has been synced to the docs (harvest-rules and sync-docs). Conversationally tell the user that.
           If in Stealth Mode: Conversationally tell the user the PR is ready (remember sync-docs and harvest-rules were intentionally skipped).
-          
-          Then (in all modes): Ask: "Would you like me to clear the active task from memory? I'll set the active task to none and archive the session file to `.agenticguild/completed_sessions/` so it's no longer the current task — you can delete that folder or file later if you don't need the record. Reply yes to clear and archive, or no to leave it as-is for now."
+
+          Then (in all modes): Ask: "Would you like me to clear the active task from memory? I'll set the active task to none and move the session file to `.agenticguild/completed_sessions/` so it's no longer the current task. Reply CONTINUE to clear and archive, or STOP to leave it as-is for now."
         </action>
-        <yield>[PAUSE - AWAIT USER CONFIRMATION TO CLEAR TASK FROM MEMORY]</yield>
+        <yield>[PAUSE - AWAIT CONTINUE OR STOP (this question always stops)]</yield>
       </step>
       <step id="4.5">
         <action>
-          Parse the user's reply. If they confirmed (e.g. "yes", "clear", "archive"): Read `.agenticguild/current_state.md` to get `<active_task_pointer>`. If the pointer contains a session filename (e.g. `task_foo.md`): Create `.agenticguild/completed_sessions/` if it does not exist (e.g. run `mkdir -p .agenticguild/completed_sessions`). Move the session file from `.agenticguild/active_sessions/` to `.agenticguild/completed_sessions/` with a date suffix in the filename (e.g. `task_foo_YYYY-MM-DD.md`). Then update `.agenticguild/current_state.md`: set `<active_task_pointer>` to `[NONE]` and `<execution_context>` to `<active_skill>[NONE]</active_skill>`, `<current_phase>[NONE]</current_phase>`, `<current_step>[NONE]</current_step>`. Confirm to the user that the task was cleared and the session file was archived. If the pointer was already [NONE] or the session file was missing, just update current_state to [NONE] and confirm. If they declined (e.g. "no", "keep"): Acknowledge; no changes. The session stays in active_sessions and the pointer unchanged; they can clear later via status-check or by running finish-branch again.
+          Parse the user's reply. If they replied `CONTINUE` (or confirmed, e.g. "yes", "clear", "archive"): Use `cat` to read `.agenticguild/current_state.md` to get `<active_task_pointer>`. If the pointer contains a session filename (e.g. `task_foo.md`): Create `.agenticguild/completed_sessions/` if it does not exist. MOVE the session file from `.agenticguild/active_sessions/` to `.agenticguild/completed_sessions/` with a date suffix in the filename (e.g. `task_foo_YYYY-MM-DD.md`); never copy-and-delete and never overwrite an existing archived file. Then use a targeted edit to update `.agenticguild/current_state.md`: set `<active_task_pointer>` to `[NONE]` and `<execution_context>` to `<active_skill>[NONE]</active_skill>`, `<current_phase>[NONE]</current_phase>`, `<current_step>[NONE]</current_step>`. If the pointer was already [NONE] or the session file was missing, just update current_state to [NONE]. Confirm to the user that the task was cleared and the session file was archived.
+          If they replied `STOP` (or declined): Acknowledge; no changes. The session stays in active_sessions and the pointer unchanged; they can clear later via status-check or by running finish-branch again.
+        </action>
+        <yield>[AUTO-TRANSITION TO 4.6]</yield>
+      </step>
+      <step id="4.6">
+        <action>
+          Close-out. Make one final commit of any uncommitted harvest, docs, and archive changes (allowed in `commit` and `cloud` modes and in hands-off; in `suggest` mode output a suggested commit message instead). If the git rules allow pushing (`cloud` mode or hands-off), push once, as the last push (in hands-off, `git pull --rebase` first). Then remind the owner to mark the PR Ready for review so the final CI check runs. Do not suggest re-running the remote reviewer after docs-only changes. Never mark the PR Ready yourself and never merge.
         </action>
         <yield>[PAUSE - FINISH-BRANCH COMPLETE]</yield>
       </step>
