@@ -23,16 +23,20 @@ for skill in skills/*/SKILL.md; do
     function err(msg) { print file ": " msg; bad = 1 }
     function addEdge(from, to) { n++; efrom[n] = from; eto[n] = to; targeted[to] = 1 }
     BEGIN {
-      split("CONTINUE YES NO STOP FINDINGS GUIDANCE ACCEPT ACCEPT-CHECK RETRY MANUAL CLOSED STOPPED APPLY SKIP FIX PASS OTHER", c, " ")
+      split("CONTINUE YES NO OPEN STOP FINDINGS GUIDANCE ACCEPT ACCEPT-CHECK RETRY MANUAL CLOSED STOPPED APPLY SKIP FIX PASS OTHER", c, " ")
       for (i in c) okclass[c[i]] = 1
       split("AUTO QUESTION DECISION RESULT NESTED", k, " ")
       for (i in k) okkind[k[i]] = 1
+    }
+    /^[ \t]*<phase id="/ {
+      match($0, /id="[^"]*"/); phase = substr($0, RSTART + 4, RLENGTH - 5)
+      next
     }
     /^[ \t]*<step id="/ {
       line = $0
       match(line, /id="[^"]*"/); step = substr(line, RSTART + 4, RLENGTH - 5)
       if (step in steps) err("duplicate step id " step)
-      steps[step] = 1; order[++nsteps] = step
+      steps[step] = 1; order[++nsteps] = step; phaseOf[step] = phase
       if (match(line, /only-from="[^"]*"/)) onlyfrom[step] = " " substr(line, RSTART + 11, RLENGTH - 12) " "
       if (line ~ /close-step="true"/) closer[step] = 1
       if (line ~ /procedure="true"/) entry[step] = 1
@@ -92,6 +96,7 @@ for skill in skills/*/SKILL.md; do
         tgt = rtgt[i]; r = rret[i]
         if (!(tgt in steps)) err("step " rfrom[i] ": target " tgt " is not a step (row: " rtext[i] ")")
         if (r != "" && !(r in steps)) err("step " rfrom[i] ": return step " r " does not exist")
+        if ((tgt in inproc) && !(tgt in entry) && phaseOf[rfrom[i]] != phaseOf[tgt]) err("step " rfrom[i] ": " tgt " belongs to a procedure and cannot be entered from outside it")
         if ((tgt in entry) && r == "" && !(rfrom[i] in inproc)) err("step " rfrom[i] ": entering procedure " tgt " needs a return step (row: " rtext[i] ")")
         if (r != "" && !(tgt in entry)) err("step " rfrom[i] ": only procedure entries take a return (row: " rtext[i] ")")
       }

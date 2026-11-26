@@ -9,13 +9,13 @@
     2. PAUSES: Exits of kind QUESTION, DECISION, or RESULT are pauses, and so are NESTED steps while the nested skill waits for the owner. At a pause you MUST completely stop generating text and wait for the owner's reply.
     3. REPLIES: A reply is read only by the exits table of the step that paused, using `<reply_classes>`. `STOP` beats every other class. A reply that fits no row except OTHER takes the OTHER row. Never guess a reply into a row it does not fit.
     4. End every response that stops at a pause with a short, conversational progress summary and an invitation to reply.
-    5. MODE: Read `finish_branch_mode` in `.agenticguild/config.json` with `cat` (`stepped` when absent). The owner can also say "finish branch hands-off" for this run. A hands-off run of this skill means one of those two; `start_task_mode` does not apply here. The mode changes only two things: the nested review loops (`code-review`, `audit-compliance`) chain their fix rounds and next passes automatically in hands-off mode and stop after each fix round in stepped mode, and step 3.3 continues on its own in hands-off mode. Every pause in this skill stops in both modes.
+    5. MODE: Read `finish_branch_mode` in `.agenticguild/config.json` with `cat` (`stepped` when absent). The owner can also say "finish branch hands-off" for this run. A hands-off run of this skill means one of those two; `start_task_mode` does not apply here. Hands-off changes: the nested review loops (`code-review`, `audit-compliance`) chain their fix rounds and next passes automatically (stepped mode stops after each fix round), step 3.3 continues on its own, the Draft opens without asking (2.4), and commit and push are allowed in any `agent_git` mode (GIT MODES; PU.1 then rebases first). Every pause in this skill stops in both modes.
     6. REMOTE REVIEW: Some remote reviewers (for example Bugbot) review a PR only once. Never trigger the remote reviewer yourself, and never post its re-run comment unless the owner explicitly asks. Never suggest a re-run after docs-only changes. Tell the owner when a manual re-run is worthwhile: when code changed after the review.
-    7. PUSH TIMING: Pushes go through procedure PU only. Before the Draft is open, the only push is step 2.3 (it carries everything the nested reviews and the full check committed); where the owner pushes (OWNER), steps 2.7 and 2.10 ask for it. From step 3.1 on, push after each fix round (FIX-FINDINGS, or a FULL-CHECK fix in step 3.2) and once at the very end in step 4.8, with no pushes in between. Under OWNER, PU asks the owner to push and waits.
+    7. PUSH TIMING: Pushes go through procedure PU only. The Draft counts as open once step 2.9 has been reached in this run. Before that, the only push is step 2.3 (it carries everything the nested reviews and the full check committed); where the owner pushes (OWNER), steps 2.7 and 2.10 ask for it. From step 3.1 on, push after each fix round (FIX-FINDINGS, or a FULL-CHECK fix in step 3.2) and once at the very end in step 4.8, with no pushes in between. Under OWNER, PU asks the owner to push and waits.
     8. PR TIMING: The Draft PR exists only after the code review, the compliance audit, and the full check have run in this run. This is enforced by the table: the `only-from` attribute of a step lists the only steps that may lead into it, and `scripts/check.sh` fails if any other step does. Never mark a PR Ready and never merge.
     9. DISPOSITIONS: Findings left unfixed (`ACCEPT`, or `CONTINUE` at a report) and failing checks the owner accepted are recorded under `## Review disposition` in the active session file (targeted edits only). When there is no active session, record them under the same heading at the end of `.agenticguild/review_ledger.md` instead (create the file if missing, never overwrite it).
     10. CONFIRMATION: A reply that names a fix (`FIX n`, `APPLY n`, or pasted findings the owner wants fixed) is the confirmation SAFE FILE OPERATIONS asks for, for the files that fix edits. Moves and deletes always need their own confirmation.
-    11. PROCEDURES: Phases FC, FX, and PU are procedures that several steps call. A row ending `-> FC.1 return 2.3` enters the procedure and remembers 2.3 on a stack. A row whose target is RETURN removes the last remembered step and continues there. A row whose target is `SAME` asks the same pause again.
+    11. PROCEDURES: Phases FC (FULL-CHECK), FX (FIX-FINDINGS), and PU (PUSH) are procedures that several steps call. A row ending `-> FC.1 return 2.3` enters the procedure and remembers 2.3 on a stack. A row whose target is RETURN removes the last remembered step and continues there. A row whose target is `SAME` asks the same pause again.
   </state_machine_directives>
 
   <hard_constraints>
@@ -31,7 +31,8 @@
 
   <reply_classes>
     How each class is recognized. Each pause lists the classes it accepts; the owner may word them freely.
-    CONTINUE: `CONTINUE`, `PROCEED`, yes, green, done, pushed, resolved, "it is open", or a link to the PR. `YES` is the same class.
+    CONTINUE: `CONTINUE`, `PROCEED`, yes, green, done, pushed, resolved. `YES` is the same class.
+    OPEN: "open", "it is open", or a link to the PR (the Draft exists). Never CONTINUE.
     NO: no, or declining the offer.
     STOP: `STOP`.
     FINDINGS: pasted review findings or CI errors. Number them 1, 2, 3 in the order pasted, in your reply; an `ACCEPT n` sent with the paste refers to that order.
@@ -70,9 +71,9 @@
   <workflow>
     <phase id="0" name="Setup">
       <step id="0.1" name="Pre-flight">
-        <action>Verify `docs/core/deterministic_coding_standards.md`, `docs/core/SYSTEM_ARCHITECTURE.md`, and `docs/core/SPEC.md` exist.</action>
+        <action>Verify `docs/core/deterministic_coding_standards.md`, `docs/core/SYSTEM_ARCHITECTURE.md`, `docs/core/SPEC.md`, and `docs/ai/code_review_prompt.md` exist (the nested skills need them).</action>
         <exits kind="AUTO">
-          WHEN all three exist -> 0.3
+          WHEN all of them exist -> 0.3
           WHEN otherwise -> 0.2
         </exits>
       </step>
@@ -88,10 +89,10 @@
       <step id="0.3" name="Read the setup">
         <action>
           Use `cat` to quietly read `.agenticguild/config.json` and `.agenticguild/current_state.md`. If the config contains `"stealth_mode": true`, remember that you are operating in stealth mode. Note `finish_branch_mode` (`stepped` when absent), `agent_git` (`suggest` when absent), and `verification` (`tdd` when absent). If the owner said "hands-off" in this request, run hands-off for this run. Do not announce any of this.
-          Note whether `current_state.md` shows `<active_skill>finish-branch</active_skill>` with `<current_step>3.1</current_step>`: a previous run left a Draft waiting for its remote review. If it does, check that a PR exists for this branch (the PR tool, a read-only `gh pr view`, or the owner's word); if none exists the marker is stale: clear it with a targeted edit and carry on as if it was absent.
+          Note whether `current_state.md` shows `<active_skill>finish-branch</active_skill>` with `<current_step>3.1</current_step>`: a previous run left a Draft waiting for its remote review. If it does, check that a PR exists for this branch (the PR tool, a read-only `gh pr view`, or the owner's word); if you can verify that none exists the marker is stale: clear it with a targeted edit and carry on as if it was absent; if you cannot verify it, treat it as present and let step 0.4 ask the owner.
         </action>
         <exits kind="AUTO">
-          WHEN a previous run is waiting at step 3.1 and a PR exists for this branch -> 0.4
+          WHEN a previous run is waiting at step 3.1 and a PR exists, or its existence cannot be verified -> 0.4
           WHEN otherwise -> 0.5
         </exits>
       </step>
@@ -158,8 +159,8 @@
       <step id="2.4" name="Route to the Draft" only-from="2.3">
         <action>Check whether a PR already exists for this branch (the PR tool, a read-only `gh pr view`, or the owner's word). If one exists, use it. Never create a ready PR.</action>
         <exits kind="AUTO">
-          WHEN a PR already exists and you pushed it -> 2.9
-          WHEN a PR already exists and the owner pushes (OWNER) -> 2.10
+          WHEN a PR already exists and the branch is pushed (by you in 2.3, or by the owner after a rejected push) -> 2.9
+          WHEN a PR already exists and the owner has yet to push (OWNER) -> 2.10
           WHEN no PR exists and this is a HANDS-OFF run with a PR tool -> 2.5
           WHEN no PR exists and this is a CLOUD run with a PR tool -> 2.6
           WHEN otherwise -> 2.7
@@ -184,19 +185,19 @@
       <step id="2.7" name="Owner opens the Draft" only-from="2.4 2.7 2.8">
         <action>Use `.cursor/skills/pr-description/SKILL.md` to give the owner the filled PR template as text, and give the push command. Ask the owner to push the branch and open the Draft with that text, and to reply "open" (or paste the PR link) once the Draft exists. "Pushed" alone is not enough here.</action>
         <exits kind="RESULT">
-          ON CONTINUE -> 2.9 : the Draft is open
+          ON OPEN -> 2.9 : the Draft is open
           ON FINDINGS -> FX.1 return 2.7 : fix them; the owner pushes and opens the Draft afterwards
           ON NO -> END : the owner will not open a PR now; nothing is marked delivered
           ON STOP -> END-STOPPED
-          ON OTHER -> SAME : say which replies are valid and ask again; if the owner says a PR already exists for this branch, ask for its link or "open" to confirm
+          ON OTHER -> SAME : say which replies are valid and ask again; if the owner says a PR already exists for this branch, ask for its link or "open" to confirm, then treat it as open
         </exits>
       </step>
       <step id="2.8" name="Opening failed" only-from="2.5">
-        <action>Show the error from the PR tool. Valid replies: retry, it is open (or its link), or manual (you give the owner the text and the push command).</action>
+        <action>Show the error from the PR tool. Valid replies: retry, open (or its link), or manual (you give the owner the text and the push command).</action>
         <exits kind="RESULT">
           ON RETRY -> 2.5
           ON MANUAL -> 2.7
-          ON CONTINUE -> 2.9 : the owner opened it
+          ON OPEN -> 2.9 : the owner opened it
           ON STOP -> END-STOPPED
           ON OTHER -> SAME : say which replies are valid, ask again
         </exits>
@@ -380,7 +381,7 @@
         <action>
           Number the findings in the order pasted. Fix the real issues (say briefly which are noise or false positives and why). Findings the owner accepted (`ACCEPT n` in the same reply) are not fixed: record each under `## Review disposition`.
           For each fixed issue, silently append an entry to `.agenticguild/review_ledger.md` (check with `test -e`; create if missing; never overwrite): **Source** ("CI check", "Remote review", or "Local review"), **Issue**, **Diagnosis/Why it failed**, **Outcome** (fixed), **Fix**.
-          AGENT-RUN: run the project's checks (claim "verified" only for commands you ran) and commit only when they pass. OWNER: do not run them; the owner runs them in step FX.4.
+          AGENT-RUN: run the project's checks (claim "verified" only for commands you ran) and commit only the files this fix round changed, and only when the checks pass (uncommitted harvest or docs edits stay uncommitted). OWNER: do not run them; the owner runs them in step FX.4.
         </action>
         <exits kind="AUTO">
           WHEN a finding needs a product or architecture decision, or the checks still fail after an honest attempt -> FX.3
@@ -419,9 +420,9 @@
 
     <phase id="PU" name="PUSH procedure">
       <step id="PU.1" name="Push" procedure="true">
-        <action>Push the feature branch per PUSH TIMING (directive 7) and `<who_does_what>`. When called from step 2.3 or from any step after the Draft is open: AGENT-RUN pushes (in a hands-off run run `git pull --rebase` first; never force-push), and OWNER goes to PU.3. Any other call before the Draft is open pushes nothing.</action>
+        <action>Push the feature branch per PUSH TIMING (directive 7) and `<who_does_what>`. When called from step 2.3 or from any step after the Draft is open: AGENT-RUN pushes (in a hands-off run, first run `git pull --rebase --autostash` when the branch already has an upstream; push a new branch with `git push -u origin <branch>`; never force-push), and OWNER goes to PU.3, unless there is nothing unpushed. Any other call before the Draft is open pushes nothing.</action>
         <exits kind="AUTO">
-          WHEN PUSH TIMING says nothing is pushed now -> RETURN
+          WHEN PUSH TIMING says nothing is pushed now, or no commit is unpushed -> RETURN
           WHEN OWNER -> PU.3
           WHEN you pushed -> RETURN
           WHEN otherwise (the push was rejected or the rebase conflicted) -> PU.2

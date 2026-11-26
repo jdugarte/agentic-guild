@@ -29,7 +29,7 @@
   <pre_flight>
     <directive>Before executing the workflow, verify the necessary context exists.</directive>
     <check>Verify `docs/core/deterministic_coding_standards.md` and `docs/core/SPEC.md` exist.</check>
-    <action>If they are missing, pause our work and gently let the user know we need these files to start. Offer to gracefully initialize the project templates for them. If the user says yes, run sync.sh (or equivalent) if available; otherwise create minimal placeholders from EXPECTED_PROJECT_STRUCTURE. Do NOT hallucinate contents without user confirmation.</action>
+    <action>If they are missing, pause our work and gently let the user know we need these files to start. Offer to gracefully initialize the project templates for them. If the user says yes, run sync.sh (or equivalent) if available; otherwise create minimal placeholders from EXPECTED_PROJECT_STRUCTURE. Do NOT hallucinate contents without user confirmation. If the user declines, end the skill without doing anything else (when invoked from `finish-branch`, return STOPPED).</action>
   </pre_flight>
 
   <workflow>
@@ -95,7 +95,7 @@
         </action>
         <exits kind="AUTO">
           WHEN a FIX or ACCEPT number matches no finding -> 2.6 : change nothing
-          WHEN the checks still fail after an honest fix attempt, or a finding needs a product or architecture decision -> 2.3
+          WHEN the checks still fail after an honest fix attempt and the owner has not accepted the failure, or a finding needs a product or architecture decision -> 2.3
           WHEN nothing was changed (only findings were accepted) and this is not a hands-off run -> 2.4
           WHEN the owner runs the checks (`suggest` or `commit` mode outside a hands-off run) -> 2.5
           WHEN this is a hands-off run -> 1.1 : the round is committed; run the next audit over the whole branch now
