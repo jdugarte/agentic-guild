@@ -2,7 +2,7 @@
   <skill_definition>
     <name>process-feedback</name>
     <description>An interrupt subroutine that analyzes feedback from CI tools, linters, or human reviewers, applies the fix, logs the diagnosis implicitly, and smoothly returns to the previous state.</description>
-    <trigger>The user pastes a review comment, CI error, SonarQube log, Bugbot comment, or types "process-feedback:"</trigger>
+    <trigger>The user pastes a review comment, CI error, SonarQube log, a remote reviewer comment (for example Bugbot), or types "process-feedback:"</trigger>
   </skill_definition>
 
   <state_machine_directives>
@@ -11,8 +11,9 @@
     3. You must maintain the illusion of a 'subroutine'. Once finished, you MUST seamlessly resume whatever skill or task was active before you were triggered.
   </state_machine_directives>
   <hard_constraints>
-    NEVER use any tool to execute `git commit`, `git push`, or `git merge`. These commands are STRICTLY FORBIDDEN.
-    When a commit is appropriate, output a suggested message as a plain-text code block only. The user runs all git commands themselves.
+    GIT MODES: Read `agent_git` in `.agenticguild/config.json` with `cat` (`suggest` when absent). `suggest`: never run `git commit` or `git push`; when a commit is appropriate, output a suggested message as a plain-text code block and the owner runs git. `commit`: you may run `git commit` on the current feature branch, never `git push`. `cloud`: you may run `git commit` and `git push` on the current feature branch. A hands-off run allows commit and push for that run in any mode. A run is hands-off when the owner said hands-off for it, or when the mode setting of the workflow it belongs to is hands-off: `start_task_mode` for start-task, `finish_branch_mode` for finish-branch and for every skill finish-branch runs.
+    ALWAYS FORBIDDEN in every mode: `git merge`, `git push --force` (and `--force-with-lease`), amending commits that were already pushed, pushing to the default branch, `gh pr merge`, `gh pr close`, `gh pr ready`, `gh release create`, and creating a PR. The only PR you may create is the Draft PR in finish-branch step 2.5, and only as the `<who_does_what>` of that skill allows.
+    SAFE FILE OPERATIONS: Never overwrite or delete an existing file without the user's explicit confirmation. Before any file write, move, or delete, read `docs/ai/SAFE_FILE_OPERATIONS.md` and follow it.
   </hard_constraints>
 
   <workflow>
@@ -28,10 +29,12 @@
       </step>
       <step id="1.2">
         <action>
-          Silently append a structured entry to `.agenticguild/review_ledger.md` for EACH distinct issue fixed. If the file doesn't exist, create it.
-          Format for each entry: 
+          Silently append a structured entry to `.agenticguild/review_ledger.md` for EACH distinct issue fixed. Check that the file exists with `test -e`; if it is missing, create it; never overwrite it.
+          Format for each entry (the same format `code-review`, `audit-compliance`, and the CI and remote review fix rounds use):
+          - **Source:** [Where the feedback came from, for example "CI", "Remote review", "Pasted feedback"]
           - **Issue:** [Brief description of the feedback]
           - **Diagnosis/Why it failed:** [The root cause]
+          - **Outcome:** [fixed]
           - **Fix:** [What was changed]
         </action>
         <yield>[AUTO-TRANSITION TO 1.3]</yield>

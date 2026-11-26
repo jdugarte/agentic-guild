@@ -1,20 +1,36 @@
 #!/bin/bash
 # sync.sh
 # Bootstraps agentic:guild OS in a new destination project.
+# It never overwrites an existing file: files that already exist are left alone.
 # For projects already running agentic:guild, use the `update-agentic-guild` AI skill instead.
-# Usage: ./sync.sh
+# Usage: ./sync.sh [--stealth] [--track-memory]
 
 REPO_URL="https://raw.githubusercontent.com/jdugarte/agentic-guild/main"
 REGISTRY_URL="$REPO_URL/playbooks/SYNC_REGISTRY.md"
-TMP_REGISTRY="/tmp/agenticguild_sync_registry.md"
+TMP_REGISTRY="$(mktemp)"
+TMP_DOWNLOAD="$(mktemp)"
+trap 'rm -f "$TMP_REGISTRY" "$TMP_DOWNLOAD" .cursorrules.tmp' EXIT
 
 STEALTH_MODE=false
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --stealth) STEALTH_MODE=true; shift ;;
-        *) shift ;;
-    esac
+TRACK_MEMORY=false
+MAX_ARGS=10
+for _ in $(seq 1 "$MAX_ARGS"); do
+  [ "$#" -eq 0 ] && break
+  case "$1" in
+    --stealth) STEALTH_MODE=true ;;
+    --track-memory) TRACK_MEMORY=true ;;
+  esac
+  shift
 done
+if [ "$#" -gt 0 ]; then
+  echo "❌ Too many arguments (maximum $MAX_ARGS)."
+  exit 1
+fi
+
+if [ "$STEALTH_MODE" = true ] && [ "$TRACK_MEMORY" = true ]; then
+  echo "ℹ️  Stealth Mode never tracks .agenticguild/ in git; ignoring --track-memory."
+  TRACK_MEMORY=false
+fi
 
 if [ "$STEALTH_MODE" = true ]; then
   echo "🥷 Initializing agentic:guild Operating System in STEALTH MODE..."
@@ -22,24 +38,67 @@ else
   echo "🧠 Initializing agentic:guild Operating System..."
 fi
 
+# Downloads a URL into the shared temp file. Succeeds only when the download works and is not empty,
+# so a failed download can never leave an empty file behind.
+fetch_to_tmp() {
+  curl -fsS "$1" -o "$TMP_DOWNLOAD" 2>/dev/null && [ -s "$TMP_DOWNLOAD" ]
+}
+
+# Helper function to create directory
+ensure_dir() {
+  local dir="$1"
+  if [ ! -d "$dir" ]; then
+    mkdir -p "$dir"
+  fi
+}
+
+# Handles one row of the registry table: skips headers and existing files, otherwise downloads the file.
+sync_registry_row() {
+  local line="$1" source dest strategy
+
+  [[ "$line" != \|* ]] && return 0
+  [[ "$line" == *"Upstream Source"* ]] && return 0
+  [[ "$line" == *"---"* ]] && return 0
+
+  IFS='|' read -r _ source dest strategy _ <<< "$line"
+  source=$(echo "$source" | xargs)
+  dest=$(echo "$dest" | xargs)
+  strategy=$(echo "$strategy" | xargs)
+  [ -z "$source" ] && return 0
+
+  if [ -e "$dest" ]; then
+    echo "   ⏩ Skipping $dest (already exists; use the update-agentic-guild skill to update it)"
+    return 0
+  fi
+
+  ensure_dir "$(dirname "$dest")"
+  echo "   📄 Adding $dest ($strategy)..."
+  if fetch_to_tmp "$REPO_URL/$source"; then
+    mv "$TMP_DOWNLOAD" "$dest"
+    TMP_DOWNLOAD="$(mktemp)"
+    if [ "$STEALTH_MODE" = true ] && ! grep -qxF "$dest" "$EXCLUDE_FILE"; then
+      echo "$dest" >> "$EXCLUDE_FILE"
+    fi
+  else
+    echo "   ⚠️  Could not download $source; skipped $dest."
+  fi
+}
+
 # 1. Fetch the Sync Registry (single source of truth for all file mappings)
 echo "📋 Fetching Sync Registry..."
-curl -s "$REGISTRY_URL" > "$TMP_REGISTRY"
-if [ ! -s "$TMP_REGISTRY" ]; then
+if ! curl -fsS "$REGISTRY_URL" -o "$TMP_REGISTRY" 2>/dev/null || [ ! -s "$TMP_REGISTRY" ]; then
   echo "❌ Failed to fetch SYNC_REGISTRY.md. Check your internet connection."
   exit 1
 fi
 
-# 2. Create necessary directories and stealth tracking
+# 2. Create necessary directories and git ignore rules
 echo "📁 Building directory structure..."
 
+EXCLUDE_FILE=".git/info/exclude"
 if [ "$STEALTH_MODE" = true ]; then
   mkdir -p .git/info
-  EXCLUDE_FILE=".git/info/exclude"
   touch "$EXCLUDE_FILE"
   echo "📝 Securing agentic:guild files in .git/info/exclude selectively (Stealth Mode)..."
-  
-  # Ensure the exclude file has the section header
   if ! grep -q "# agentic:guild (Stealth Mode)" "$EXCLUDE_FILE"; then
     {
       echo ""
@@ -47,47 +106,44 @@ if [ "$STEALTH_MODE" = true ]; then
       echo ".agenticguild/*"
     } >> "$EXCLUDE_FILE"
   fi
-  
-  # Write stealth config
-  mkdir -p .agenticguild
-  echo '{"stealth_mode": true}' > .agenticguild/config.json
 else
   GITIGNORE_FILE=".gitignore"
-  if [ -f "$GITIGNORE_FILE" ]; then
-    if ! grep -q ".agenticguild/\*" "$GITIGNORE_FILE"; then
-      echo "📝 Securing .agenticguild/ memory folder in .gitignore..."
+  if [ -f "$GITIGNORE_FILE" ] && grep -q "\.agenticguild" "$GITIGNORE_FILE"; then
+    echo "   ⏩ Leaving the existing .agenticguild rules in .gitignore untouched."
+  else
+    echo "📝 Adding the .agenticguild/ ignore rules to .gitignore..."
+    if [ "$TRACK_MEMORY" = true ]; then
+      {
+        echo ""
+        echo "# agentic:guild: ephemeral files only (sessions and logs are tracked)"
+        echo ".agenticguild/current_state.md"
+        echo ".agenticguild/review_ledger.md"
+        echo ".agenticguild/backups/"
+      } >> "$GITIGNORE_FILE"
+    else
       {
         echo ""
         echo "# agentic:guild Transient Memory"
         echo ".agenticguild/*"
         echo "!.agenticguild/.gitkeep"
+        echo "!.agenticguild/config.json"
+        echo "!.agenticguild/source_package.json"
       } >> "$GITIGNORE_FILE"
     fi
-  else
-    echo "📝 Creating .gitignore to secure .agenticguild/ memory..."
-    {
-      echo "# agentic:guild Transient Memory"
-      echo ".agenticguild/*"
-      echo "!.agenticguild/.gitkeep"
-    } > "$GITIGNORE_FILE"
   fi
-  
-  # Ensure stealth mode is explicitly turned off if previously set
-  mkdir -p .agenticguild
-  echo '{"stealth_mode": false}' > .agenticguild/config.json
 fi
-
-# Helper function to create directory
-function ensure_dir() {
-  local dir="$1"
-  if [ ! -d "$dir" ]; then
-    mkdir -p "$dir"
-  fi
-}
 
 ensure_dir .cursor/skills
 ensure_dir .agenticguild/active_sessions
 ensure_dir .agenticguild/completed_sessions
+
+# Write the settings file only when it does not exist yet; an existing one is never changed.
+CONFIG_FILE=".agenticguild/config.json"
+if [ -e "$CONFIG_FILE" ]; then
+  echo "   ⏩ Keeping the existing $CONFIG_FILE (edit it by hand to change settings)."
+else
+  printf '{\n  "stealth_mode": %s,\n  "track_memory": %s\n}\n' "$STEALTH_MODE" "$TRACK_MEMORY" > "$CONFIG_FILE"
+fi
 
 if [ "$STEALTH_MODE" = false ]; then
   ensure_dir docs/ai
@@ -104,81 +160,61 @@ touch .agenticguild/.gitkeep
 touch .agenticguild/active_sessions/.gitkeep
 touch .agenticguild/completed_sessions/.gitkeep
 
-# 4. Download files according to the Sync Registry
+# 3. Download files according to the Sync Registry (never overwriting existing files)
 echo "📥 Syncing files from registry..."
+MAX_REGISTRY_ROWS=500
 in_sync_block=false
+row_count=0
 while IFS= read -r line; do
-  # Detect block markers
+  row_count=$((row_count + 1))
+  if [ "$row_count" -gt "$MAX_REGISTRY_ROWS" ]; then
+    echo "❌ SYNC_REGISTRY.md has more than $MAX_REGISTRY_ROWS lines; stopping."
+    exit 1
+  fi
   if [[ "$line" == *"SYNC_REGISTRY [START]"* ]]; then in_sync_block=true; continue; fi
   if [[ "$line" == *"SYNC_REGISTRY [END]"* ]]; then in_sync_block=false; continue; fi
   if ! $in_sync_block; then continue; fi
-
-  # Skip header and separator rows
-  [[ "$line" != \|* ]] && continue
-  [[ "$line" == *"Upstream Source"* ]] && continue
-  [[ "$line" == *"---"* ]] && continue
-
-  # Parse columns
-  IFS='|' read -r _ source dest strategy _ <<< "$line"
-  source=$(echo "$source" | xargs)
-  dest=$(echo "$dest" | xargs)
-  strategy=$(echo "$strategy" | xargs)
-  [ -z "$source" ] && continue
-
-  # Ensure parent directory exists
-  ensure_dir "$(dirname "$dest")"
-
-  if [ "$strategy" == "init" ]; then
-    if [ ! -f "$dest" ]; then
-      echo "   📄 Initializing $dest..."
-      curl -s "$REPO_URL/$source" > "$dest"
-      if [ "$STEALTH_MODE" = true ]; then
-        if ! grep -q "^$dest$" "$EXCLUDE_FILE"; then echo "$dest" >> "$EXCLUDE_FILE"; fi
-      fi
-    else
-      echo "   ⏩ Skipping $dest (already exists)"
-    fi
-  else
-    if [ "$STEALTH_MODE" = true ] && [ -f "$dest" ]; then
-      echo "   🛡️  Stealth Mode: Skipping $dest (already exists) to avoid dirtying tracked files."
-    else
-      echo "   📥 Syncing $dest..."
-      curl -s "$REPO_URL/$source" > "$dest"
-      if [ "$STEALTH_MODE" = true ]; then
-        if ! grep -q "^$dest$" "$EXCLUDE_FILE"; then echo "$dest" >> "$EXCLUDE_FILE"; fi
-      fi
-    fi
-  fi
+  sync_registry_row "$line"
 done < "$TMP_REGISTRY"
 
-# 5. Inject agentic:guild OS Rules into .cursorrules
+# 4. Inject agentic:guild OS Rules into .cursorrules
 echo "⚙️  Configuring .cursorrules..."
-AGENTIC_GUILD_RULES=$(curl -s "$REPO_URL/templates/core/AGENTIC_GUILD_RULES.md")
-if [ -n "$AGENTIC_GUILD_RULES" ]; then
-  if [ ! -f ".cursorrules" ]; then
+if fetch_to_tmp "$REPO_URL/templates/core/AGENTIC_GUILD_RULES.md"; then
+  if [ ! -e ".cursorrules" ]; then
     echo "   ⚙️  Creating .cursorrules with agentic:guild OS..."
-    echo "$AGENTIC_GUILD_RULES" > .cursorrules
+    cp "$TMP_DOWNLOAD" .cursorrules
     if [ "$STEALTH_MODE" = true ]; then
-      if ! grep -q "^.cursorrules$" "$EXCLUDE_FILE"; then echo ".cursorrules" >> "$EXCLUDE_FILE"; fi
+      if ! grep -qxF ".cursorrules" "$EXCLUDE_FILE"; then echo ".cursorrules" >> "$EXCLUDE_FILE"; fi
     fi
   elif ! grep -q "<agentic_guild_os>" ".cursorrules"; then
-    echo "   ⚙️  Prepending agentic:guild OS to existing .cursorrules..."
-    { echo "$AGENTIC_GUILD_RULES"; cat .cursorrules; } > .cursorrules.tmp && mv .cursorrules.tmp .cursorrules
+    echo "   ⚙️  Adding agentic:guild OS to the top of the existing .cursorrules (a backup is kept)..."
+    ensure_dir .agenticguild/backups
+    cp -p .cursorrules .agenticguild/backups/.cursorrules.bak
+    { cat "$TMP_DOWNLOAD"; echo; cat .cursorrules; } > .cursorrules.tmp
+    # Replace the file only after confirming that all of the original content is still there.
+    if tail -c "$(wc -c < .cursorrules)" .cursorrules.tmp | cmp -s - .cursorrules; then
+      mv .cursorrules.tmp .cursorrules
+    else
+      rm -f .cursorrules.tmp
+      echo "   ⚠️  Could not add the rules safely; .cursorrules was left unchanged."
+    fi
     if [ "$STEALTH_MODE" = true ]; then
       echo "   ⚠️  In stealth mode, .cursorrules blocks were added. Make sure to strip them out before committing changes if team does not want agentic:guild config."
     fi
   else
     echo "   ✅ agentic:guild OS rules already present in .cursorrules."
   fi
+else
+  echo "   ⚠️  Failed to fetch the agentic:guild rules. Skipping .cursorrules."
 fi
 
-# 7. Git Hook Installation
+# 5. Git Hook Installation
 if [ "$STEALTH_MODE" = true ]; then
   echo "⚓ Skipping Git Hook installation in stealth mode to avoid disrupting team workflows."
 else
   echo "⚓ Installing Git Hooks..."
-  PRE_COMMIT_LOGIC=$(curl -s "$REPO_URL/templates/git-hooks/pre-commit-logic.sh")
-  if [ -n "$PRE_COMMIT_LOGIC" ]; then
+  if fetch_to_tmp "$REPO_URL/templates/git-hooks/pre-commit-logic.sh"; then
+    PRE_COMMIT_LOGIC="$(cat "$TMP_DOWNLOAD")"
     HOOK_FILE=".git/hooks/pre-commit"
     if [ -f "$HOOK_FILE" ]; then
       if ! grep -q "AGENTIC-GUILD PRE-COMMIT" "$HOOK_FILE"; then
@@ -200,9 +236,6 @@ else
     echo "   ⚠️  Failed to fetch pre-commit hook logic. Skipping git hook installation."
   fi
 fi
-
-# Cleanup
-rm -f "$TMP_REGISTRY"
 
 echo "🚀 Sync complete. agentic:guild Operating System is online."
 echo ""

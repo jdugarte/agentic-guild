@@ -82,7 +82,7 @@ If you've ever thought *"I need this AI to follow the same rules my team follows
 - It **writes a traceable implementation plan** you approve before the first line of code changes.
 - It uses **Test-Driven Development** by default, enforced by a Correct-by-Construction gate.
 - It **audits its own output** against your architectural standards before delivering it.
-- It **never commits or pushes** without your explicit instruction.
+- It **never commits or pushes** unless you allow it: by default it only suggests git commands, and you can choose `commit` or `cloud` mode (see [Settings](#settings)). Merging, force-pushing, and marking PRs Ready are always forbidden.
 - Every requirement gets a **REQ-ID traceability tag** (`REQ-AUTH-001`), creating an audit trail from spec to code.
 - Your documentation **stays in sync** with your code, automatically.
 
@@ -94,15 +94,20 @@ Once agentic:guild is installed, your AI assistant gains a suite of structured, 
 
 | Skill | What It Does |
 |---|---|
-| `start-task` | Full task lifecycle: classify → plan → TDD loop → CbC gate. Never starts coding without a plan you've approved. |
+| `hello` | Introduces the guild, checks that the core documents exist, and shows what you can ask for. |
+| `start-task` | Executes an explored plan one step at a time (or hands-off): classify → CbC gate → TDD loop. Warns you when there is no explored plan. |
 | `explore-task` | Deep discovery for new features or ambiguous work. Explores options, surfaces trade-offs, and documents findings before any commitment. |
-| `finish-branch` | Runs local code review, HRE compliance audit, and prepares a structured PR — in sequence, with gates between each phase. |
-| `code-review` | Project-aware static analysis that produces numbered, actionable fixes — not generic advice. |
+| `finish-branch` | Runs code review, compliance audit, the Draft PR, the remote review loop, rule harvest, docs, and archive — in sequence, with a stop after every report. |
+| `qa` | Opt-in QA pass: builds a test matrix from the plan, runs it using your project's QA profile, and stages a paste-ready reviewer record. |
+| `code-review` | Reviews the whole branch like an independent automated PR reviewer (every path, exit, and caller of what changed) and produces numbered, actionable fixes — not generic advice. |
 | `audit-compliance` | An independent verification pass. Checks code determinism, REQ-ID traceability, and HRE compliance mathematically. |
 | `status-check` | The GPS. Reads persistent memory to diagnose exactly where a task is blocked and fully rehydrates context. |
 | `harvest-rules` | Scans Git diffs to extract new architectural patterns and maps them to living documentation. The AI learns from its own work — rules improve as the project grows. |
 | `sync-docs` | Keeps SPEC, DATA_FLOW_MAP, ADRs, and schema references synchronized with every branch change. |
 | `roadmap-manage` | Add, prioritize, and track features and bugs in a structured `ROADMAP.md`. |
+| `roadmap-consult` | Read-only view of what is done, pending, and next. |
+| `process-feedback` | Handles pasted CI, linter, or reviewer feedback: fixes the code and logs what happened for `harvest-rules`. |
+| `update-agentic-guild` | Updates your installed skills, rules, and templates from the upstream repository, never overwriting your files without asking. |
 | `pr-description` | Generates a complete, Git-history-based PR description for you to review and submit. |
 
 ---
@@ -143,10 +148,28 @@ Once installed, you trigger skills through your AI assistant naturally:
 "Let's start this task"        → triggers start-task
 "Let's explore this feature"   → triggers explore-task
 "Let's finish this branch"     → triggers finish-branch
+"Run QA on this task"          → triggers qa
 "What's the status?"           → triggers status-check
 ```
 
 The AI handles the rest — structured, gated, auditable.
+
+---
+
+## Settings
+
+Settings live in `.agenticguild/config.json`, created by the sync script. Defaults are shown first.
+
+| Key | Values | Effect |
+|---|---|---|
+| `stealth_mode` | false / true | Keeps every guild file out of the repository's tracked files. |
+| `track_memory` | false / true | With stealth off, set true to ignore only `current_state.md`, `review_ledger.md`, and `backups/`. |
+| `agent_git` | suggest / commit / cloud | `suggest`: the agent gives you git commands. `commit`: it commits, you push. `cloud`: it commits and pushes. |
+| `verification` | tdd / human-review | Failing tests first, or reading each deliverable (for documentation projects). |
+| `start_task_mode` | stepped / hands-off | `hands-off` runs the plan's steps without pausing between them. |
+| `finish_branch_mode` | stepped / hands-off | `hands-off` applies your review choices, re-reviews the whole branch, and continues without extra pauses. |
+
+You can also say "hands-off" in a single request (for example "start task hands-off") to use that mode for one run.
 
 ---
 
@@ -220,7 +243,7 @@ agentic:guild is built in the open. If you've built a stack-agnostic skill, impr
 
 To contribute:
 1. Read [`playbooks/EXPECTED_PROJECT_STRUCTURE.md`](playbooks/EXPECTED_PROJECT_STRUCTURE.md) to understand how the repo is organized
-2. Ensure any new skills follow the `<agentic_guild_skill>` XML state-machine format with `[PAUSE]` gateway methodology
+2. Ensure any new skills follow the `<agentic_guild_skill>` XML state-machine format: every step ends in an `<exits>` table (see `skills/finish-branch/SKILL.md`), and `scripts/check.sh` must pass
 3. Open a PR — the `finish-branch` skill will guide you through our own review process
 
 We are building the practices that make AI-assisted development trustworthy. Come build them with us.
