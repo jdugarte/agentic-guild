@@ -46,13 +46,16 @@
       <step id="1.1">
         <action>
           Determine the default branch (e.g. main, master, develop) from the project. Run git log and git diff of the current branch against that default branch to gather absolute facts (e.g. `git log <default>..HEAD --oneline` and `git diff <default>...HEAD --name-only`).
-          Use the `view_file` tool to check for existing PR templates (e.g. `.github/PULL_REQUEST_TEMPLATE.md` or similar common locations).
-          
-          If you are in Stealth Mode: Draft a standard open-source style PR description based entirely on the diffs and commits. Do NOT include or mention `docs/core/`, `ROADMAP.md`, `[REQ-ID]` tags, ADRs, or internal agentic:guild structures. If the team provides a PR template, fill it out cleanly without agentic:guild metadata.
-          
-          If NOT in Stealth Mode: Draft the structured PR description. If this PR likely completes a roadmap item (check branch name or session metadata), add a helpful reminder: "If this closes a roadmap item, ensure `docs/ROADMAP.md` was updated (finish-branch does this) and mention it in the PR."
-          
-          Output the draft in a markdown code block directly in the chat (do not write to a file or copy to clipboard) and pleasantly let the user know it's ready for them to copy.
+          Look for a PR template: `.github/PULL_REQUEST_TEMPLATE.md`, or the first file under `.github/PULL_REQUEST_TEMPLATE/`. Check with the shell (`test -e`, `ls`), because search tools can miss files.
+
+          If a template exists: the description you output MUST be that template filled in. Keep every section heading and every checkbox label exactly as the template has them, drop nothing, and do not invent an alternate outline. Mark the applicable type-of-change boxes with `[x]`.
+          If no template exists: say so, and draft the description with this fallback outline: Summary, Changes, Verification, Impact, Follow-ups.
+
+          If you are in Stealth Mode: use the same structure, but leave out of the filled values any mention of `docs/core/`, `ROADMAP.md`, `[REQ-ID]` tags, ADRs, or internal agentic:guild structures. Do not remove template sections.
+
+          If NOT in Stealth Mode: fill the template honestly from what this branch actually changed. If this PR likely completes a roadmap item (check branch name or session metadata), add a helpful reminder: "If this closes a roadmap item, ensure `docs/ROADMAP.md` was updated (finish-branch does this) and mention it in the PR."
+
+          Output the draft in a markdown code block directly in the chat (do not write it to a file or copy it to the clipboard) and pleasantly let the user know it's ready for them to copy. When a Draft PR already exists, `finish-branch` uses this same filled template as the PR body.
         </action>
         <yield>[PAUSE - PR DESCRIPTION READY. USER MAY COPY FROM CODE BLOCK. SKILL COMPLETE]</yield>
       </step>
