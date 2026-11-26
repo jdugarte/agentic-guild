@@ -14,6 +14,7 @@
     7. REMOTE REVIEW: Some remote reviewers (for example Bugbot) review a PR only once. Never trigger the remote reviewer yourself, and never post its re-run comment unless the owner explicitly asks. Never suggest a re-run after docs-only changes. Tell the owner when a manual re-run is worthwhile: when code changed after the review.
     8. PUSH TIMING (applies when the git mode or hands-off allows pushing): Before the Draft PR exists, commit and push as work finishes. After the Draft exists, push only (a) at each CI check or remote review fix round and (b) once at the very end, after the documentation and archive steps, with no pushes in between. In a hands-off run, run `git pull --rebase` on the feature branch before each push; if it conflicts, stop and ask, and never force-push. In stepped mode, if a push is rejected, report it to the owner and wait; the owner tells you to pull and rebase.
     9. PR TIMING: NEVER create a PR before the code review and the compliance audit have closed with `CONTINUE` (clean, or with remaining findings explicitly named and accepted) and the pre-Draft full check (step 2.5.1) has passed. The full check has passed when it ran green (`cloud` mode or hands-off), when the owner confirmed it green (`suggest` or `commit` mode), or when the owner explicitly accepted proceeding without a green run by replying `CONTINUE` at step 2.5.1; the check itself never needs a `CONTINUE` when it ran green by itself. The Draft PR is created only at step 2.5.2. Never mark a PR Ready and never merge.
+    10. WAITING STATES: Every [PAUSE] in this skill names a waiting state defined in `<waiting_states>`. When the owner replies, read the reply ONLY with the table row of the state you last yielded in; never match it against another step's rules. If the reply matches no row, answer briefly and stay in the same state. 3.1 is a status-only pause: when the reply already carries the status (pasted findings), run steps 3.1 and 3.2 in the same response.
   </state_machine_directives>
 
   <hard_constraints>
@@ -32,6 +33,24 @@
     <check>Verify `docs/core/deterministic_coding_standards.md`, `docs/core/SYSTEM_ARCHITECTURE.md`, and `docs/core/SPEC.md` exist.</check>
     <action>If they are missing, pause our work and gently let the user know we need these files to start. Offer to gracefully initialize the project templates for them. If the user says yes, run sync.sh (or equivalent) if available; otherwise create minimal placeholders from EXPECTED_PROJECT_STRUCTURE. Do NOT hallucinate contents without user confirmation.</action>
   </pre_flight>
+
+  <waiting_states>
+    Each owner-facing pause is one state. The table says what you last asked, how each kind of reply is read, and the next state. FIX-FINDINGS, CLEAR-CHECK, and FIX-CHECK are procedures defined in step 3.2.
+
+    | State | What you last asked | Reply read as, then next state |
+    |-------|---------------------|--------------------------------|
+    | PRE-CHECK-WAIT (2.5.1) | The owner to run the full check before the Draft (`suggest` or `commit`), or hands-off stopped on a persistent failure | Green confirmation or `CONTINUE` (accept and proceed): go to 2.5.2. Pasted failing output: fix, log, commit (or suggest a commit message), ask them to re-run, stay. After a hands-off stop: any reply is guidance for the next fix attempt, stay. `STOP`: end finish-branch. |
+    | DRAFT-QUESTION-WAIT (2.5.2) | "Do you want me to open the Draft PR now?" (`cloud` outside hands-off) | `yes` or `CONTINUE`: create the Draft with the PR tool, then go to 3.1. `no` or `STOP`: end finish-branch without a PR. Anything else, including pasted findings: repeat the question, stay. |
+    | DRAFT-OPEN-WAIT (2.5.2) | The owner to open the Draft with the pasted description (`suggest`, `commit`, or no PR tool) | Confirmation that it is open, a PR link, or `CONTINUE`: go to 3.1. Pasted findings or CI errors (the Draft is open): run FIX-FINDINGS in the same response, then REVIEW-WAIT. `STOP`: end. |
+    | REVIEW-WAIT (3.1, 3.2) | Remote review findings or CI errors, or `CONTINUE` if clear | Pasted findings or errors: FIX-FINDINGS, then REVIEW-WAIT. `CONTINUE`: run CLEAR-CHECK. `STOP`: end. |
+    | POST-CHECK-WAIT (3.2) | The owner to run the full check again because code changed during the loop (`suggest` or `commit`) | Green confirmation or `CONTINUE` (accept): CLEAR. Pasted failing output: FIX-CHECK, ask them to re-run, stay. `STOP`: end. |
+    | CLEAR-PAUSE (3.2, stepped mode only) | "Remote review is clear; ready for docs and archive. `CONTINUE` or `STOP`" | `CONTINUE`: go to 4.1 (this is not remote review status and never re-runs CLEAR-CHECK). New pasted findings or errors: FIX-FINDINGS, then REVIEW-WAIT. `STOP`: end. |
+    | HARVEST-WAIT (4.1) | `harvest-rules` candidates | Its own reply words (`APPLY`, `CONTINUE`, `STOP`) are read by that skill; when it closes, go to 4.2. `STOP`: end without clearing the task or the ledger. |
+    | DOCS-WAIT (4.2) | `sync-docs` confirmation | Confirmation or `CONTINUE`: go to 4.3. Requested changes: apply, ask again, stay. `STOP`: end. |
+    | PRTEXT-WAIT (4.3) | CHANGELOG, roadmap, and PR text confirmation | Confirmation or `CONTINUE`: go to 4.4. Edits: apply, stay. `STOP`: end. |
+    | CLEAR-TASK-WAIT (4.4) | "Clear the active task and archive the session?" | `CONTINUE`, yes, clear, or archive: go to 4.5 (archive), then 4.6. `STOP` or no: no changes, then 4.6. |
+    | DONE (4.6) | Nothing (finish-branch is complete) | Any later message is a new request, not a reply. |
+  </waiting_states>
 
   <workflow>
     <phase id="0" name="Stealth Check">
@@ -74,20 +93,20 @@
       <step id="2.5.1">
         <action>
           Gate: continue only if both the code review and the compliance audit closed with `CONTINUE`. If either ended with `STOP` or has not run, do not proceed: tell the owner which check is outstanding and invite them to re-run it. No PR is created before this gate passes.
-          Re-entry after the pause: if you last paused here asking for the full check result, the owner's reply is the check result, read before anything else: pasted failing output means failed, a green confirmation means passed, and `CONTINUE` means accept and proceed to step 2.5.2. Do not re-evaluate the gate or restart the check unless the reply reports a failure. If you stopped in hands-off because a failure persisted, the reply is guidance for the next fix attempt.
+          Reply handling after a pause: see the PRE-CHECK-WAIT row of `<waiting_states>`; do not re-evaluate this gate or restart the check unless the reply reports a failure.
           Full check before the Draft PR: because CI checks usually do not run on draft PRs, run the project's full test and check suite now so any failure is fixed locally before opening the Draft (if `docs/ai/code_review_prompt.md` lists quality or check commands, run those too; under `verification: human-review`, run only documented linters/checks and skip automated tests, or note that none exist and continue).
           - `agent_git: cloud` or hands-off: run the full check yourself and report what ran (claim "passed" only for commands you actually ran). If anything fails, fix it, log the fix in `.agenticguild/review_ledger.md` if applicable, re-run the full check, and commit until it passes (in hands-off, stop if a failure persists after an honest fix attempt). Once green, [AUTO-TRANSITION TO 2.5.2].
           - `agent_git: suggest` or `commit` outside hands-off: ask the owner to run the full check and report the result (do not claim it passed and do not prompt for the Draft PR yet). If the owner reports failures, fix them, log them in `.agenticguild/review_ledger.md` if applicable, commit (in `commit` mode) or suggest a commit message (in `suggest` mode), and ask the owner to re-run — stay in step 2.5.1. Advance to step 2.5.2 only after the owner confirms the full check is green (or explicitly replies `CONTINUE` to proceed anyway).
         </action>
         <yield>
           If the full check passed in `cloud` mode or hands-off (or under `human-review` with no check commands): [AUTO-TRANSITION TO 2.5.2].
-          Otherwise (`suggest` or `commit` mode outside hands-off, or an unresolved failure): [PAUSE - AWAIT FULL CHECK CONFIRMATION BEFORE STEP 2.5.2].
+          Otherwise (`suggest` or `commit` mode outside hands-off, or an unresolved failure): [PAUSE - STATE PRE-CHECK-WAIT].
         </yield>
       </step>
       <step id="2.5.2">
         <action>
           Gate: enter only after step 2.5.1 confirmed the full check is green (or the owner explicitly replied `CONTINUE` to proceed anyway).
-          Re-entry after the pause: if you asked "Do you want me to open the Draft PR now?", `yes` opens it and `no` or `STOP` ends finish-branch; if the owner was to open the Draft themselves, any confirmation that it is open (or `CONTINUE`) moves on to step 3.1. If the reply instead pastes remote review findings or CI errors, the Draft is already open: move on to step 3.1 and handle them there as case A of step 3.2.
+          Reply handling after a pause: see the DRAFT-QUESTION-WAIT and DRAFT-OPEN-WAIT rows of `<waiting_states>`.
           Make sure the work is committed and pushed first, within the git rules (PUSH TIMING: pushes are allowed before the Draft exists):
           - `suggest` mode outside hands-off: output the git commit and push commands as a plain-text code block for the owner to run.
           - `commit` mode outside hands-off: commit any uncommitted changes and ask the owner to push.
@@ -99,7 +118,7 @@
           If QA ran for this task and the session holds a staged QA reviewer record under `## QA reviewer record` that is not yet marked as posted: post it once on the Draft PR (manual mode: give the owner the text to paste), then mark it as posted in the session with a targeted edit. A later QA run produces a new comment; never edit or delete the older one. Never repost a comment that is already marked as posted.
           Update `.agenticguild/current_state.md` with a targeted edit to indicate waiting for remote review (retain `<active_task_pointer>` unchanged).
         </action>
-        <yield>[PAUSE - AWAIT THE DRAFT PR (when the owner must open it or confirm opening it); hands-off (or once the Draft is open) continues to 3.1]</yield>
+        <yield>[PAUSE - STATE DRAFT-QUESTION-WAIT (cloud question) or DRAFT-OPEN-WAIT (owner opens it)]; hands-off (or once the Draft is open) continues to 3.1.</yield>
       </step>
     </phase>
 
@@ -109,24 +128,23 @@
           Tell the owner the Draft PR is waiting for the remote review (the remote reviewer reviews the Draft once, automatically; CI checks normally run only after the PR is marked Ready, unless the repo runs CI on drafts). Ask them to paste any remote review findings or CI errors, or to reply `CONTINUE` if clear.
         </action>
         <yield>
-          [PAUSE - AWAIT REMOTE REVIEW STATUS]
+          [PAUSE - STATE REVIEW-WAIT]
         </yield>
       </step>
       <step id="3.2">
         <action>
-          Parse the owner's input according to the state you are in. If you last asked the owner to confirm the post-loop full check (state AWAIT-FULL-CHECK), only cases C and D apply, and a pasted failing suite or a `CONTINUE` is read as case C. In every other state (waiting for the remote review status), only cases A, B, and D apply. Within the state, exactly one case applies:
-          - A. They pasted remote review findings or CI errors: analyze them, fix the real issues (ignore noise and false positives after a brief note), and for EACH fixed issue silently append an entry to `.agenticguild/review_ledger.md` (check with `test -e`; create if missing; never overwrite): **Source** ("CI check" or "Remote review"), **Issue**, **Diagnosis/Why it failed**, **Outcome** (fixed), **Fix**. Run the project's checks (claim "verified" only for commands you ran), commit, and push if the git rules allow it (PUSH TIMING (a)). If the fixes change user-visible behavior, also touch up `CHANGELOG.md` and the PR description text as needed (not in Stealth Mode). Then wait for the next status; mention that a manual re-run of the remote reviewer is worthwhile now because code changed (never post it yourself). Result: FIXED-AWAIT-REVIEW.
-          - B. They replied `CONTINUE` (remote review is clear): decide whether the full check must run again.
-            - If no code changed since step 2.5.1, no re-run is needed: the outcome of step 2.5.1 stands (green, or accepted by the owner's explicit `CONTINUE` there). Result: CLEAR.
-            - If code changed during the remote review loop (since step 2.5.1), run the full check pass again (under `verification: human-review`, run only documented linters/checks). In `cloud` mode or hands-off, run it yourself and report what ran. If it passes, result: CLEAR. If it fails, fix it (log each fix in `.agenticguild/review_ledger.md` with Source "Full check", commit, push per PUSH TIMING (a)) and re-run, repeating until it passes (in hands-off, stop and report if a failure persists after an honest fix attempt). A fix made here does not send the flow back to the remote review wait: once the re-run passes, result: CLEAR, and record that code changed after the remote review. In `suggest` or `commit` mode outside hands-off, ask the owner to run it and report. Result: AWAIT-FULL-CHECK.
-          - C. They reported the post-loop full check result (state AWAIT-FULL-CHECK only; a pasted failing suite counts here, not as case A): green, or `CONTINUE` to proceed anyway (accepting the result without another check), gives result CLEAR. If they report a failure, fix it as in B (log each fix with Source "Full check", commit or suggest the commit message per the git mode, push per PUSH TIMING (a) when allowed), ask them to re-run, and stay in AWAIT-FULL-CHECK.
-          - D. They replied `STOP`: end finish-branch without making further changes.
+          Read the owner's reply with the `<waiting_states>` row for the state you last yielded in (REVIEW-WAIT, POST-CHECK-WAIT, or CLEAR-PAUSE) and run the procedure it names.
+          Procedure FIX-FINDINGS: analyze the pasted remote review findings or CI errors, fix the real issues (ignore noise and false positives after a brief note), and for EACH fixed issue silently append an entry to `.agenticguild/review_ledger.md` (check with `test -e`; create if missing; never overwrite): **Source** ("CI check" or "Remote review"), **Issue**, **Diagnosis/Why it failed**, **Outcome** (fixed), **Fix**. Run the project's checks (claim "verified" only for commands you ran), commit, and push if the git rules allow it (PUSH TIMING (a)). If the fixes change user-visible behavior, also touch up `CHANGELOG.md` and the PR description text as needed (not in Stealth Mode). Mention that a manual re-run of the remote reviewer is worthwhile now because code changed (never post it yourself). Next state: REVIEW-WAIT.
+          Procedure CLEAR-CHECK (the remote review is clear): decide whether the full check must run again.
+          - If no code changed since step 2.5.1, no re-run is needed: the outcome of step 2.5.1 stands (green, or accepted by the owner's explicit `CONTINUE` there). Result: CLEAR.
+          - If code changed during the remote review loop (since step 2.5.1), run the full check again (under `verification: human-review`, run only documented linters/checks). In `cloud` mode or hands-off, run it yourself and report what ran; if it fails, use FIX-CHECK. Once it passes, result: CLEAR (a fix made here does not send the flow back to REVIEW-WAIT; record that code changed after the remote review). In `suggest` or `commit` mode outside hands-off, ask the owner to run it and report. Result: POST-CHECK-WAIT.
+          Procedure FIX-CHECK: fix the failing check, log each fix in `.agenticguild/review_ledger.md` with Source "Full check", commit (or suggest the commit message per the git mode), push per PUSH TIMING (a) when allowed, and re-run, repeating until it passes (in hands-off, stop and report if a failure persists after an honest fix attempt). In `suggest` or `commit` mode, ask the owner to re-run and stay in POST-CHECK-WAIT.
+          Result CLEAR: tell the owner the remote review is clear and we are ready for the final docs and archive steps. If code changed after the remote review, mention that a manual re-run of the remote reviewer is worthwhile if they want one, and that you will not post it yourself and will not wait for it.
         </action>
         <yield>
-          One branch per result:
-          FIXED-AWAIT-REVIEW: [PAUSE - AWAIT REMOTE REVIEW STATUS] (silently set the state back to 3.1).
-          AWAIT-FULL-CHECK: [PAUSE - AWAIT FULL CHECK CONFIRMATION BEFORE PHASE 4].
-          CLEAR: tell the owner the remote review is clear and we are ready for the final docs and archive steps. If code changed after the remote review (a fix in B), mention that a manual re-run of the remote reviewer is worthwhile if they want one, and that you will not post it yourself and will not wait for it. In stepped mode ask `CONTINUE` to move forward or `STOP` to end ([PAUSE - AWAIT CONTINUE OR STOP]); in hands-off mode [AUTO-TRANSITION TO 4.1].
+          Result CLEAR in stepped mode: ask `CONTINUE` to move forward or `STOP` to end ([PAUSE - STATE CLEAR-PAUSE]). Result CLEAR in hands-off mode: [AUTO-TRANSITION TO 4.1].
+          Result POST-CHECK-WAIT: [PAUSE - STATE POST-CHECK-WAIT].
+          FIX-FINDINGS finished: [PAUSE - STATE REVIEW-WAIT] (silently set the state back to 3.1).
         </yield>
       </step>
     </phase>
@@ -137,14 +155,14 @@
           If NOT in Stealth Mode: Use the `view_file` tool to read and follow `.cursor/skills/harvest-rules/SKILL.md`, including its own stops (`APPLY`, `CONTINUE`, or `STOP`). If the owner replies `STOP`, end finish-branch without clearing the active task or the ledger. Harvest runs before the docs so that the docs step can skip rules harvest just wrote.
           If in Stealth Mode: Skip `harvest-rules` entirely, as writing tracking rules inferred from Git diffs into tracked files violates stealth mode constraints, and move directly to step 4.2.
         </action>
-        <yield>[PAUSE - AWAIT CONTINUE (the harvest approval always stops)]</yield>
+        <yield>[PAUSE - STATE HARVEST-WAIT (the harvest approval always stops)]</yield>
       </step>
       <step id="4.2">
         <action>
           If NOT in Stealth Mode: Use the `view_file` tool to read and follow `.cursor/skills/sync-docs/SKILL.md` until it yields. The skill analyzes the branch diff and the session and updates any docs that need changes.
           If in Stealth Mode: Skip `sync-docs` entirely, as automatically modifying architectural documents violates stealth mode constraints.
         </action>
-        <yield>[PAUSE - AWAIT CONFIRMATION TO PROCEED (the docs confirmation always stops)]</yield>
+        <yield>[PAUSE - STATE DOCS-WAIT (the docs confirmation always stops)]</yield>
       </step>
       <step id="4.3">
         <action>
@@ -153,7 +171,7 @@
 
           Then (in all modes): use the `view_file` tool to read and follow `.cursor/skills/pr-description/SKILL.md` until it yields. The filled PR template is the PR body: update the Draft PR body with the final text (with the PR tool in `cloud` mode or hands-off; otherwise give the owner the text to paste).
         </action>
-        <yield>[PAUSE - AWAIT CONFIRMATION]</yield>
+        <yield>[PAUSE - STATE PRTEXT-WAIT]</yield>
       </step>
       <step id="4.4">
         <action>
@@ -162,11 +180,11 @@
 
           Then (in all modes): Ask: "Would you like me to clear the active task from memory? I'll set the active task to none and move the session file to `.agenticguild/completed_sessions/` so it's no longer the current task. Reply CONTINUE to clear and archive, or STOP to leave it as-is for now."
         </action>
-        <yield>[PAUSE - AWAIT CONTINUE OR STOP (this question always stops)]</yield>
+        <yield>[PAUSE - STATE CLEAR-TASK-WAIT (this question always stops)]</yield>
       </step>
       <step id="4.5">
         <action>
-          Parse the user's reply. If they replied `CONTINUE` (or confirmed, e.g. "yes", "clear", "archive"): Use `cat` to read `.agenticguild/current_state.md` to get `<active_task_pointer>`. If the pointer contains a session filename (e.g. `task_foo.md`): Create `.agenticguild/completed_sessions/` if it does not exist. MOVE the session file from `.agenticguild/active_sessions/` to `.agenticguild/completed_sessions/` with a date suffix in the filename (e.g. `task_foo_YYYY-MM-DD.md`); never copy-and-delete and never overwrite an existing archived file. Then use a targeted edit to update `.agenticguild/current_state.md`: set `<active_task_pointer>` to `[NONE]` and `<execution_context>` to `<active_skill>[NONE]</active_skill>`, `<current_phase>[NONE]</current_phase>`, `<current_step>[NONE]</current_step>`. If the pointer was already [NONE] or the session file was missing, just update current_state to [NONE]. Confirm to the user that the task was cleared and the session file was archived.
+          Read the reply with the CLEAR-TASK-WAIT row of `<waiting_states>`. If they replied `CONTINUE` (or confirmed, e.g. "yes", "clear", "archive"): Use `cat` to read `.agenticguild/current_state.md` to get `<active_task_pointer>`. If the pointer contains a session filename (e.g. `task_foo.md`): Create `.agenticguild/completed_sessions/` if it does not exist. MOVE the session file from `.agenticguild/active_sessions/` to `.agenticguild/completed_sessions/` with a date suffix in the filename (e.g. `task_foo_YYYY-MM-DD.md`); never copy-and-delete and never overwrite an existing archived file. Then use a targeted edit to update `.agenticguild/current_state.md`: set `<active_task_pointer>` to `[NONE]` and `<execution_context>` to `<active_skill>[NONE]</active_skill>`, `<current_phase>[NONE]</current_phase>`, `<current_step>[NONE]</current_step>`. If the pointer was already [NONE] or the session file was missing, just update current_state to [NONE]. Confirm to the user that the task was cleared and the session file was archived.
           If they replied `STOP` (or declined): Acknowledge; no changes. The session stays in active_sessions and the pointer unchanged; they can clear later via status-check or by running finish-branch again.
         </action>
         <yield>[AUTO-TRANSITION TO 4.6]</yield>
@@ -175,7 +193,7 @@
         <action>
           Close-out. Make one final commit of any uncommitted harvest, docs, and archive changes (allowed in `commit` and `cloud` modes and in hands-off; in `suggest` mode output a suggested commit message instead). If the git rules allow pushing (`cloud` mode or hands-off), push once, as the last push (in hands-off, `git pull --rebase` first). Then remind the owner to mark the PR Ready for review so the final CI check runs. Do not suggest re-running the remote reviewer after docs-only changes. Never mark the PR Ready yourself and never merge.
         </action>
-        <yield>[PAUSE - FINISH-BRANCH COMPLETE]</yield>
+        <yield>[PAUSE - STATE DONE: FINISH-BRANCH COMPLETE]</yield>
       </step>
     </phase>
   </workflow>
