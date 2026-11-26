@@ -2,7 +2,7 @@
   <skill_definition>
     <name>process-feedback</name>
     <description>An interrupt subroutine that analyzes feedback from CI tools, linters, or human reviewers, applies the fix, logs the diagnosis implicitly, and smoothly returns to the previous state.</description>
-    <trigger>The user pastes a review comment, CI error, SonarQube log, Bugbot comment, or types "process-feedback:"</trigger>
+    <trigger>The user pastes a review comment, CI error, SonarQube log, a remote reviewer comment (for example Bugbot), or types "process-feedback:"</trigger>
   </skill_definition>
 
   <state_machine_directives>
@@ -29,10 +29,12 @@
       </step>
       <step id="1.2">
         <action>
-          Silently append a structured entry to `.agenticguild/review_ledger.md` for EACH distinct issue fixed. If the file doesn't exist, create it.
-          Format for each entry: 
+          Silently append a structured entry to `.agenticguild/review_ledger.md` for EACH distinct issue fixed. Check that the file exists with `test -e`; if it is missing, create it; never overwrite it.
+          Format for each entry (the same format `code-review`, `audit-compliance`, and the CI and remote review fix rounds use):
+          - **Source:** [Where the feedback came from, for example "CI", "Remote review", "Pasted feedback"]
           - **Issue:** [Brief description of the feedback]
           - **Diagnosis/Why it failed:** [The root cause]
+          - **Outcome:** [fixed]
           - **Fix:** [What was changed]
         </action>
         <yield>[AUTO-TRANSITION TO 1.3]</yield>
