@@ -15,16 +15,23 @@ for skill in skills/*/SKILL.md; do
 done
 
 FINISH_BRANCH="skills/finish-branch/SKILL.md"
+outside_table=$(awk '/^  <waiting_states>$/ {skip=1; next} /^  <\/waiting_states>$/ {skip=0; next} !skip' "$FINISH_BRANCH")
+state_names() {
+  local text
+  text=$(cat)
+  { grep -oE '\b[A-Z]+(-[A-Z]+)*-(WAIT|DONE|PAUSE)\b' <<< "$text" || true; grep -oE 'STATE [A-Z]+(-[A-Z]+)*' <<< "$text" | sed 's/^STATE //' || true; } | sort -u
+}
 defined_states=$(grep -oE '^    \| [A-Z]+(-[A-Z]+)* \(' "$FINISH_BRANCH" | sed -E 's/^ +\| //; s/ \($//' | sort -u)
-named_states=$( { grep -oE '\b[A-Z]+(-[A-Z]+)*-(WAIT|DONE|PAUSE)\b' "$FINISH_BRANCH" || true; grep -oE 'STATE [A-Z]+(-[A-Z]+)*' "$FINISH_BRANCH" | sed 's/^STATE //' || true; } | sort -u)
-undefined_states=$(comm -13 <(echo "$defined_states") <(echo "$named_states"))
-unused_states=$(comm -23 <(echo "$defined_states") <(echo "$named_states"))
+named_anywhere=$(state_names < "$FINISH_BRANCH")
+named_in_steps=$(state_names <<< "$outside_table")
+undefined_states=$(comm -13 <(echo "$defined_states") <(echo "$named_anywhere"))
+unused_states=$(comm -23 <(echo "$defined_states") <(echo "$named_in_steps"))
 if [ -n "$undefined_states" ]; then
   echo "finish-branch names waiting states that are not in its table: $undefined_states"
   failed=1
 fi
 if [ -n "$unused_states" ]; then
-  echo "finish-branch defines waiting states that nothing names: $unused_states"
+  echo "finish-branch defines waiting states that no directive, pre-flight, or step names: $unused_states"
   failed=1
 fi
 
