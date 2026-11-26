@@ -40,7 +40,7 @@ section here.
   to `audit-compliance`. The flow is written as transition tables (`<exits>` rows: reply class,
   action, next step) instead of prose, and a Draft that is waiting for its remote review can be
   resumed in a later chat.
-- **`code-review` and `audit-compliance`** stop at every report with the same reply words
+- **`code-review` and `audit-compliance`** stop at every report with the same reply meanings
   (`FIX`, `ACCEPT`, `APPLY`, `CONTINUE`, `STOP`), review the whole branch on every pass, and
   report only the checks they actually ran. `code-review` now reviews like an independent
   automated PR reviewer: every path, every exit, and every caller of what changed, with a
@@ -48,11 +48,10 @@ section here.
 - **`scripts/check.sh`** validates the transition tables of every skill (`scripts/check-flow.sh`:
   every pause has STOP and OTHER rows, every target exists, every step is reachable, the steps that
   open the Draft PR can only be entered after the reviews and the full check, nested skills hand control back
-  the way their caller expects) and fails if the git rules differ between skills. A second check
-  (`scripts/check-replies.js`) keeps the reply words exact: a pause accepts only whole-message words
-  (`CONTINUE`, `YES`, `NO`, `STOP`, `OPEN`, `RETRY`, `MANUAL`, `SKIP`, `AGAIN`, `FIX ...`, `ACCEPT ...`, `APPLY ...`),
-  never synonyms like "ok", "done", or "pushed". It asserts the same invariants at every pause and compares
-  where each word leads with a golden matrix (`scripts/flow-matrix.txt`).
+  the way their caller expects) and fails if the git rules differ between skills. Replies at a pause are
+  read by meaning: a reply that answers a row takes it, an open instruction is done as a
+  side task and the same question is asked again, and anything unclear gets "I didn't understand" with the
+  valid options.
 - **`harvest-rules`** keeps only rules that pass four tests and moves the ledger only after it
   finishes. **`sync-docs`** shows an impact table. **`pr-description`** fills your PR template.
 - **`sync.sh` and `update-agentic-guild`** never overwrite an existing file, write config only

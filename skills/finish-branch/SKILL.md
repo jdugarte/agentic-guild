@@ -7,8 +7,8 @@
   <state_machine_directives>
     1. STEPS: Execute one `<step>` per response. A step whose `<exits kind="AUTO">` has a matching `WHEN` row continues into that row's target in the same response (it is not a pause). Rows are tried top to bottom and the first match is taken.
     2. PAUSES: Exits of kind QUESTION, DECISION, or RESULT are pauses, and so are NESTED steps while the nested skill waits for the owner. At a pause you MUST completely stop generating text and wait for the owner's reply.
-    3. REPLIES: A reply is read only by the exits table of the step that paused. It is one of the reply words only when the whole message equals the word: case, spaces, and a final full stop or exclamation mark are ignored, and any other extra words make it not a match. `ok`, `sure`, `done`, `green`, `pushed`, `resolved`, `proceed`, and every other synonym are not words. `STOP` beats every other class. Pasted findings or errors (FINDINGS) and instructions or a path for another attempt (GUIDANCE) are longer free text, and count only at a pause that lists them. A reply that fits no row except OTHER takes the OTHER row: say which words are valid and ask again. Never guess a reply into a row it does not fit.
-    4. PAUSE PROMPT: End every response that stops at a pause with a short, conversational progress summary, then name the exact words that pause accepts (each word of the classes in its exits table except OTHER, with what it does, taken from the row's note) and invite the owner to reply with one of them. Free text counts only where the table lists FINDINGS or GUIDANCE.
+    3. REPLIES: Read the owner's reply by its meaning at the pause that asked. (a) If it clearly answers a row of this step's exits table, take that row. (b) If it is an instruction for other work (for example fix another finding, or explore something else), do that work now as a side task, say what you did, then return to this same pause and ask again; the instruction does not change the flow by itself. If the work would leave this skill, do not start it here: say so and ask the owner to reply `STOP` to end this run first. (c) If you cannot tell which of these it is, say you did not understand what the owner wants, list the replies this pause accepts, and ask again. `STOP` always takes the STOP row. Never guess a reply into a row it does not fit.
+    4. PAUSE PROMPT: End every response that stops at a pause with a short, conversational progress summary and the replies this pause accepts, named in plain words (for example `yes or no`, `fix 1,3`, `continue`, `stop`), and invite the owner to answer in their own words or with those.
     5. MODE: Read `finish_branch_mode` in `.agenticguild/config.json` with `cat` (`stepped` when absent). The owner can also say "finish branch hands-off" for this run. A hands-off run of this skill means one of those two; `start_task_mode` does not apply here. Hands-off changes: the nested review loops (`code-review`, `audit-compliance`) chain their fix rounds and next passes automatically (stepped mode stops after each fix round), step 3.3 continues on its own, the Draft opens without asking (2.4), and commit and push are allowed in any `agent_git` mode (GIT MODES; PU.1 then rebases first). Every pause in this skill stops in both modes.
     6. REMOTE REVIEW: Some remote reviewers (for example Bugbot) review a PR only once. Never trigger the remote reviewer yourself, and never post its re-run comment unless the owner explicitly asks. Never suggest a re-run after docs-only changes. Tell the owner when a manual re-run is worthwhile: when code changed after the review.
     7. PUSH TIMING: Pushes go through procedure PU only. The Draft counts as open once step 2.9 has been reached in this run. Before that, the only push is step 2.3 (it carries everything the nested reviews and the full check committed); where the owner pushes (OWNER), steps 2.7 and 2.10 ask for it. From step 3.1 on, push after each fix round (FIX-FINDINGS, or a FULL-CHECK fix in step 3.2) and once at the very end in step 4.8, with no pushes in between. Under OWNER, PU asks the owner to push and waits.
@@ -30,20 +30,20 @@
   </persona>
 
   <reply_classes>
-    The reply words of this skill (see directive 3: a word matches only when the whole message equals it). Each pause lists the classes it accepts.
-    CONTINUE: `CONTINUE`. Move on, or report that the step's work is done (for example green, pushed, or resolved).
-    YES: `YES`: the yes of a yes/no question.
-    NO: `NO`: the no of a yes/no question, or declining the offer.
-    STOP: `STOP`.
-    OPEN: `OPEN`, or a message that is only the link to the PR: the Draft exists.
-    RETRY: `RETRY`.
-    MANUAL: `MANUAL`: the owner does it, or asks for the text to do it.
-    ACCEPT: `ACCEPT 2` or `ACCEPT 1,3`: leave those findings unfixed (numbers from the last numbered list shown).
-    ACCEPT-CHECK: a bare `ACCEPT`: accept committing with a failing check.
-    FINDINGS: free text that pastes review findings or CI errors. Number them 1, 2, 3 in the order pasted, in your reply; an `ACCEPT n` sent with the paste refers to that order.
-    GUIDANCE: free text with instructions or a hint for another attempt.
+    How each class is recognized. Replies are read by meaning (directive 3), so the owner may use any wording that means the class; the words in backticks are the ones the skill offers.
+    CONTINUE: moving on (`CONTINUE`). At a step that reports an outcome, it also means the outcome is green, pushed, or resolved. Not at a yes/no question.
+    YES: a yes to a yes/no question (`YES`).
+    NO: a no to a yes/no question, or declining the offer (`NO`).
+    STOP: stop the run (`STOP`).
+    OPEN: the Draft exists (`OPEN`, or a link to the PR).
+    RETRY: try the step again (`RETRY`).
+    MANUAL: the owner does it, or asks for the text to do it (`MANUAL`).
+    ACCEPT: leave those numbered findings unfixed (`ACCEPT 2` or `ACCEPT 1,3`).
+    ACCEPT-CHECK: accept committing with a failing check (a bare `ACCEPT`).
+    FINDINGS: pasted review findings or CI errors. Number them 1, 2, 3 in the order pasted, in your reply; an `ACCEPT n` sent with the paste refers to that order.
+    GUIDANCE: instructions or a hint for another attempt.
     CLOSED, STOPPED: how a nested skill ended (`CONTINUE` closes it, `STOP` stops it).
-    OTHER: anything else.
+    OTHER: anything that fits no row. Directive 3 applies: a side task, or say it was not understood.
   </reply_classes>
 
   <who_does_what>

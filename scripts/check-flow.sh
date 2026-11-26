@@ -3,7 +3,6 @@
 # Rules: every step has exactly one <exits>; kinds and reply classes come from a fixed list; every pause has STOP and OTHER rows
 # (NESTED steps have CLOSED and STOPPED), STOP leads to END-STOPPED (or a close-step) and OTHER to SAME; AUTO exits end with a "WHEN otherwise" row; every target exists; every step is reachable from the first step by following rows;
 # `only-from` gates hold; procedure entries carry a return; nested skills exist and end with both END and END-STOPPED.
-# The reply words themselves (exact words, the reply matrix) are checked by check-replies.js.
 
 set -e
 

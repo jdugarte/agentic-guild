@@ -1,5 +1,5 @@
 #!/bin/bash
-# check.sh — Checks that every skill points to the safe file operations rule, that the git rules are identical in every skill, that the skill transition tables are valid (check-flow.sh), that every pause takes exact reply words and routes them as the golden matrix says (check-replies.js), then runs ShellCheck on all shell scripts.
+# check.sh — Checks that every skill points to the safe file operations rule, that the git rules are identical in every skill, that the skill transition tables are valid (check-flow.sh), then runs ShellCheck on all shell scripts.
 
 set -e
 
@@ -29,9 +29,6 @@ if ! bash scripts/check-flow.sh; then
   failed=1
 fi
 
-if ! node scripts/check-replies.js; then
-  failed=1
-fi
 
 if ! command -v shellcheck &> /dev/null; then
   echo "ShellCheck not installed (brew install shellcheck). Skipping ShellCheck."
