@@ -13,7 +13,7 @@
     6. MODE: Read `finish_branch_mode` in `.agenticguild/config.json` with `cat` (`stepped` when absent). The owner can also say "finish branch hands-off" for this run. In BOTH modes every report from `code-review` and `audit-compliance` stops for the owner's choice. In hands-off mode only: after the owner's choice, the nested skill applies the fixes, updates the review ledger, runs the checks, commits, and runs the next pass over the whole branch automatically, then stops at the new report; and the "ready to move on?" pauses between phases are skipped. These still stop in hands-off mode: the `sync-docs` confirmation, the `harvest-rules` approval, the wait for CI check and remote review results, the question about clearing the task, any finding that needs a product or architecture decision, and every action the git rules forbid.
     7. REMOTE REVIEW: Some remote reviewers (for example Bugbot) review a PR only once. Never trigger the remote reviewer yourself, and never post its re-run comment unless the owner explicitly asks. Never suggest a re-run after docs-only changes. Tell the owner when a manual re-run is worthwhile: when code changed after the review.
     8. PUSH TIMING (applies when the git mode or hands-off allows pushing): Before the Draft PR exists, commit and push as work finishes. After the Draft exists, push only (a) at each CI check or remote review fix round and (b) once at the very end, after the documentation and archive steps, with no pushes in between. In a hands-off run, run `git pull --rebase` on the feature branch before each push; if it conflicts, stop and ask, and never force-push. In stepped mode, if a push is rejected, report it to the owner and wait; the owner tells you to pull and rebase.
-    9. PR TIMING: NEVER create a PR before the code review and the compliance audit have both closed with `CONTINUE` (clean, or with remaining findings explicitly named and accepted). The Draft PR is created only at step 2.5.1. Never mark a PR Ready and never merge.
+    9. PR TIMING: NEVER create a PR before the code review, the compliance audit, and the pre-Draft full check (step 2.5.1) have closed with `CONTINUE` (clean, or with remaining findings explicitly named and accepted). The Draft PR is created only at step 2.5.2. Never mark a PR Ready and never merge.
   </state_machine_directives>
 
   <hard_constraints>
@@ -74,18 +74,30 @@
       <step id="2.5.1">
         <action>
           Gate: continue only if both the code review and the compliance audit closed with `CONTINUE`. If either ended with `STOP` or has not run, do not proceed: tell the owner which check is outstanding and invite them to re-run it. No PR is created before this gate passes.
-          Full check before the Draft PR: because CI checks usually do not run on draft PRs, run the project's full test and check suite now so any failure is fixed locally before opening the Draft (if `docs/ai/code_review_prompt.md` lists quality or check commands, run those too; under `verification: human-review`, run only documented linters/checks and skip automated tests).
-          - In `cloud` mode or hands-off: run the full check yourself and report what ran (claim "passed" only for commands you actually ran). If anything fails, fix it, log the fix in `.agenticguild/review_ledger.md` if applicable, re-run the full check, and commit before opening the Draft PR.
-          - In `suggest` or `commit` mode outside hands-off: ask the owner to run the full check and report the result; do not claim it passed and do not open the Draft PR until the owner confirms it is green.
-          Make sure the work is committed and pushed first, within the git rules (PUSH TIMING: pushes are allowed before the Draft exists).
+          Full check before the Draft PR: because CI checks usually do not run on draft PRs, run the project's full test and check suite now so any failure is fixed locally before opening the Draft (if `docs/ai/code_review_prompt.md` lists quality or check commands, run those too; under `verification: human-review`, run only documented linters/checks and skip automated tests, or note that none exist and continue).
+          - `agent_git: cloud` or hands-off: run the full check yourself and report what ran (claim "passed" only for commands you actually ran). If anything fails, fix it, log the fix in `.agenticguild/review_ledger.md` if applicable, re-run the full check, and commit until it passes (in hands-off, stop if a failure persists after an honest fix attempt). Once green, [AUTO-TRANSITION TO 2.5.2].
+          - `agent_git: suggest` or `commit` outside hands-off: ask the owner to run the full check and report the result (do not claim it passed and do not prompt for the Draft PR yet). If the owner reports failures, fix them, log them in `.agenticguild/review_ledger.md` if applicable, commit (in `commit` mode) or suggest a commit message (in `suggest` mode), and ask the owner to re-run — stay in step 2.5.1. Advance to step 2.5.2 only after the owner confirms the full check is green (or explicitly replies `CONTINUE` to proceed anyway).
+        </action>
+        <yield>
+          If the full check passed in `cloud` mode or hands-off (or under `human-review` with no check commands): [AUTO-TRANSITION TO 2.5.2].
+          Otherwise (`suggest` or `commit` mode outside hands-off, or an unresolved failure): [PAUSE - AWAIT FULL CHECK CONFIRMATION BEFORE STEP 2.5.2].
+        </yield>
+      </step>
+      <step id="2.5.2">
+        <action>
+          Gate: enter only after step 2.5.1 confirmed the full check is green (or the owner explicitly replied `CONTINUE` to proceed anyway).
+          Make sure the work is committed and pushed first, within the git rules (PUSH TIMING: pushes are allowed before the Draft exists):
+          - `suggest` mode outside hands-off: output the git commit and push commands as a plain-text code block for the owner to run.
+          - `commit` mode outside hands-off: commit any uncommitted changes and ask the owner to push.
+          - `cloud` mode or hands-off: commit any uncommitted changes, run `git pull --rebase` if hands-off, and push.
           If a PR already exists for this branch, use it. Otherwise, open a Draft PR (never a ready PR):
-          - Manual (default; the agent has no PR permission): tell the owner it is time to open the Draft PR now, and give them the PR description from `.cursor/skills/pr-description/SKILL.md` (the filled PR template) to paste.
-          - `agent_git: cloud` outside hands-off: ask "Do you want me to open the Draft PR now?" and wait for the answer. On yes, create a Draft with the PR tool, using the filled PR template as the body.
-          - Hands-off: open the Draft PR automatically when you have a PR tool; otherwise tell the owner to open it.
+          - `suggest` or `commit` mode outside hands-off (or whenever no PR tool is available): tell the owner it is time to open the Draft PR now, and give them the PR description from `.cursor/skills/pr-description/SKILL.md` (the filled PR template) to paste.
+          - `agent_git: cloud` outside hands-off (with a PR tool): ask "Do you want me to open the Draft PR now?" and wait for the answer. On yes, create a Draft with the PR tool, using the filled PR template as the body.
+          - Hands-off (with a PR tool): open the Draft PR automatically using the filled PR template as the body.
           If QA ran for this task and the session holds a staged QA reviewer record under `## QA reviewer record` that is not yet marked as posted: post it once on the Draft PR (manual mode: give the owner the text to paste), then mark it as posted in the session with a targeted edit. A later QA run produces a new comment; never edit or delete the older one. Never repost a comment that is already marked as posted.
           Update `.agenticguild/current_state.md` with a targeted edit to indicate waiting for remote review (retain `<active_task_pointer>` unchanged).
         </action>
-        <yield>[PAUSE - AWAIT THE FULL CHECK OR DRAFT PR (manual and cloud question); hands-off continues to 3.1]</yield>
+        <yield>[PAUSE - AWAIT THE DRAFT PR (when the owner must open it or confirm opening it); hands-off (or once the Draft is open) continues to 3.1]</yield>
       </step>
     </phase>
 
@@ -102,12 +114,13 @@
         <action>
           Parse the owner's input:
           - If they pasted errors or findings: analyze them, fix the real issues (ignore noise and false positives after a brief note), and for EACH fixed issue silently append an entry to `.agenticguild/review_ledger.md` (check with `test -e`; create if missing; never overwrite): **Source** ("CI check" or "Remote review"), **Issue**, **Diagnosis/Why it failed**, **Outcome** (fixed), **Fix**. Run the project's checks (claim "verified" only for commands you ran), commit, and push if the git rules allow it (PUSH TIMING (a)). If the fixes change user-visible behavior, also touch up `CHANGELOG.md` and the PR description text as needed (not in Stealth Mode). Then wait for the next status; mention that a manual re-run of the remote reviewer is worthwhile now because code changed (never post it yourself).
-          - If they replied `CONTINUE` (remote review is clear): skip fixes. If code changed during the remote review loop (since the pre-Draft full check), run the full check pass again (in `cloud` mode or hands-off, run it yourself and report what ran, fixing any failure as one more fix round above; in `suggest` or `commit` mode outside hands-off, ask the owner to run it and wait for confirmation; under `verification: human-review`, run only documented linters/checks). If no code changed since the pre-Draft full check, skip re-running it. Then [AUTO-TRANSITION TO 4.1].
+          - If they replied `CONTINUE` (remote review is clear): skip fixes. If code changed during the remote review loop (since step 2.5.1), run the full check pass again (under `verification: human-review`, run only documented linters/checks): in `cloud` mode or hands-off, run it yourself and report what ran (fixing any failure as one more fix round above); in `suggest` or `commit` mode outside hands-off, ask the owner to run it and wait for confirmation (do not advance to 4.1 until the owner confirms it is green or replies `CONTINUE`; a failure becomes one more fix round). If no code changed since step 2.5.1, skip re-running it.
           - If they replied `STOP`: end finish-branch without making further changes.
         </action>
         <yield>
           If fixes were applied: [PAUSE - AWAIT REMOTE REVIEW STATUS] (silently set the state back to 3.1).
-          If the remote review is clear: tell the owner we are ready for the final docs and archive steps; in stepped mode ask `CONTINUE` to move forward or `STOP` to end ([PAUSE - AWAIT CONTINUE OR STOP]); in hands-off mode continue to 4.1.
+          If waiting on the owner to confirm the post-loop full check (`suggest` or `commit` mode outside hands-off): [PAUSE - AWAIT FULL CHECK CONFIRMATION BEFORE PHASE 4].
+          If the remote review is clear and any required full check is green: tell the owner we are ready for the final docs and archive steps; in stepped mode ask `CONTINUE` to move forward or `STOP` to end ([PAUSE - AWAIT CONTINUE OR STOP]); in hands-off mode [AUTO-TRANSITION TO 4.1].
         </yield>
       </step>
     </phase>
