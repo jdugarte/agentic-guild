@@ -22,8 +22,11 @@ This document lists every referenced path, its purpose, and how it fits into the
 *Located in `.cursor/skills/`*
 | Path | Purpose |
 |------|---------|
-| `start-task/SKILL.md` | Initializes planning, memory tracking, and strict TDD. |
-| `finish-branch/SKILL.md` | Orchestrates the compliance audit and PR pipeline. |
+| `hello/SKILL.md` | Introduces the guild and shows what the user can do. |
+| `explore-task/SKILL.md` | Explores a task with the owner and locks the spec and the implementation plan before any code. |
+| `start-task/SKILL.md` | Executes the explored plan one step at a time (or hands-off) with test-first discipline. |
+| `finish-branch/SKILL.md` | Orchestrates code review, compliance audit, the Draft PR, the remote review loop, harvest, docs, and archive. |
+| `qa/SKILL.md` | Opt-in QA pass using the project-owned `docs/ai/qa_profile.md`; sets the profile up on request. |
 | `code-review/SKILL.md` | Runs project-specific static analysis. |
 | `audit-compliance/SKILL.md` | IV&V agent that mathematically checks code determinism. |
 | `status-check/SKILL.md` | Reads `.agenticguild/` to diagnose blockers and rehydrate context. |
@@ -32,6 +35,8 @@ This document lists every referenced path, its purpose, and how it fits into the
 | `pr-description/SKILL.md` | Outputs a Git-based PR description in a code block for the user to copy. |
 | `roadmap-manage/SKILL.md` | Add, prioritize, catalog items in the project roadmap. |
 | `roadmap-consult/SKILL.md` | Read-only view of roadmap: done, pending, priorities. |
+| `process-feedback/SKILL.md` | Interrupt routine for pasted CI, linter, or reviewer feedback: fix, log to the review ledger, resume. |
+| `update-agentic-guild/SKILL.md` | Updates the guild's skills, rules, and templates from the upstream repository. |
 
 ## 3. The Constitution (Project Governance)
 *Located in `docs/core/`*

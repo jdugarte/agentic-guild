@@ -42,9 +42,14 @@
              
           3. **What can we do right now? (The Menu):** Show them the capabilities by providing exact phrases they can copy/paste to trigger my other skills:
              - 👉 \`I need to brainstorm and explore a new feature.\` 
-             - 👉 \`Start implementing a task from my roadmap.\`
+             - 👉 \`Start implementing a task from my roadmap.\` (add "hands-off" to run the steps without pausing between them)
+             - 👉 \`Run QA on the active task.\` (or \`Set up QA.\`)
+             - 👉 \`Finish this branch.\` (add "hands-off" to chain the review loops)
              - 👉 \`Run an audit on my code and check compliance.\`
              - 👉 \`Draft a PR description for the changes I just made.\`
+             - 👉 \`What's the status?\`
+             
+             Mention that exploring first is the recommended way to start: it takes a few minutes and produces the plan the other skills follow.
              
           4. **Next Steps:** Prompt the user directly to start moving: "What are you working on today? (Or should we tackle those missing documents first?)"
         </action>

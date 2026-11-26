@@ -55,7 +55,7 @@ Configuration is scattered across several places:
 | `linter_command` | e.g. `npm run check`, `bundle exec rubocop` |
 | `migration_paths` | Paths to check for schema changes (e.g. `db/`, `prisma/`) |
 | `skills_enabled` | Optional list to disable specific skills |
-| `bugbot_trigger` | Phrase for "CI is green" (e.g. `CI IS GREEN`, `BUGBOT IS HAPPY`) |
+| `remote_review_clear_phrase` | Phrase for "CI check and remote review are clear" (default `CONTINUE`; for example `CI IS GREEN`) |
 
 ---
 
