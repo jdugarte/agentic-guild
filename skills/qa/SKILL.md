@@ -35,7 +35,7 @@
       <step id="1.1">
         <action>
           Offer the setup in plain language: "QA isn't set up for this project yet. I can ask you a few questions and save the answers in `docs/ai/qa_profile.md`. It takes about five minutes. Want to do it now?" If the owner declines, say QA is not configured for this project and stop.
-          If the owner agrees, read the "Setup reference" section of this file and ask the setup questions ONE at a time, in order, skipping Section B when the product has no user interface. Offer sensible suggestions from the project (read the repository to propose answers) and let the owner confirm or correct each one.
+          If the owner agrees, read the "Setup reference" section of this file and ask the setup questions ONE at a time, in order, skipping only the questions that need a user interface when the product has none (see the notes in the setup reference). Offer sensible suggestions from the project (read the repository to propose answers) and let the owner confirm or correct each one.
         </action>
         <yield>[PAUSE - AWAIT THE ANSWER TO EACH QUESTION; repeat until the questions are done]</yield>
       </step>
@@ -69,6 +69,15 @@
         <action>
           Run every remaining in-scope row. Put temporary QA tests where the profile says (never inside the project's regular test suite), run them, and record for each row the actual result and the evidence. Where the profile says a part needs the owner (for example a simulator or a real device), list those rows as "owner to run" with exact steps and do not mark them passed.
           For each failing row, decide: is it a test mistake (the test or the matrix was wrong) or a product bug (the product does not match the plan)? Say which, with the reason. A test mistake can be corrected in the QA test and the row re-run (ask `FIX 1,3` or `FIX all` first). A product bug is only reported; never fix product code in this pass.
+          If any failing row is a test mistake, list them and ask the owner for `FIX 1,3` or `FIX all` (or `CONTINUE` to report them as they are).
+        </action>
+        <yield>
+          [PAUSE - AWAIT FIX OR CONTINUE, only when a failing row is a test mistake]
+          On `FIX ...`: correct only the QA tests for the chosen rows, re-run those rows, and return to this step's decision. On `CONTINUE`, or when no failing row is a test mistake: [AUTO-TRANSITION TO 3.3].
+        </yield>
+      </step>
+      <step id="3.3">
+        <action>
           Remove only the temporary files you created in this pass, naming them. Never touch other files.
         </action>
         <yield>[AUTO-TRANSITION TO 4.1]</yield>
@@ -108,9 +117,9 @@
     Section A. Project
     1. Product kind: web app, mobile app, backend API service, library, or other.
     2. Framework and language.
-    3. Does it have a user interface? If no, skip Section B.
+    3. Does it have a user interface? If no, skip the browser and simulator options in question 5 and the screenshots question (11); every other question still applies.
 
-    Section B. Running it
+    Section B. Running it (asked for every product; a service answers it with its own start command, test instance, and test clients)
     4. Start command (how to run the app).
     5. Where QA runs: the owner's own browser, a simulator on the owner's computer, a VM for cloud agents, or a headless test runner.
     6. Can a cloud agent run QA, and which parts need the owner (for example a simulator or a real device)?
@@ -136,6 +145,6 @@
 
     Example 2: Flutter mobile app. Product kind: mobile app. Framework: Flutter. A cloud agent can run headless widget tests; integration tests and anything on a simulator or device need the owner to run them, so the profile lists those rows as owner to run. Start command: the project's run command for a simulator. Test command: the widget test command pointed at the temporary QA folder (for example `flutter test test_qa`). Test data: mock or fake data providers, or a seeded test backend. Never touch: real user accounts and live backends.
 
-    Example 3: Backend API service. Product kind: backend API. No user interface, so Section B is skipped. Framework and language per the project (for example Go). Test command: the project's test command with a QA filter or folder, run against a local or test instance. Test data: fixtures or a seeded test database with a reset command. First surfaces to cover: the endpoints the task touched. Never touch: production databases and live third-party services. Actions QA must not take: sending real messages or charges.
+    Example 3: Backend API service. Product kind: backend API. No user interface, so the browser and simulator options and the screenshots question are skipped; the rest of Section B still applies: the start command for a local or test instance, a headless test runner, a seed command and reset command, test clients with their roles (names only), and the environment variable names the service reads. Framework and language per the project (for example Go). Test command: the project's test command with a QA filter or folder, run against a local or test instance. Test data: fixtures or a seeded test database with a reset command. First surfaces to cover: the endpoints the task touched. Never touch: production databases and live third-party services. Actions QA must not take: sending real messages or charges.
   </setup_reference>
 </agentic_guild_skill>

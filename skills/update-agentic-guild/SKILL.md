@@ -67,7 +67,7 @@
         <action>
           Guard the git ignore rules for `.agenticguild/`. Follow `docs/ai/SAFE_FILE_OPERATIONS.md`: never rewrite `.gitignore` or `.git/info/exclude`. Append only, after checking with `grep` that the rule is missing. Remove or replace existing lines only after the user confirms the exact lines.
 
-          Read `.agenticguild/config.json` with `cat` for `track_memory` (default `false`). Check whether the project already tracks its memory: if `git ls-files .agenticguild` lists any file other than `.gitkeep`, the project has chosen to commit `.agenticguild/`.
+          Read `.agenticguild/config.json` with `cat` for `track_memory` (default `false`). Check whether the project already tracks its memory: run `git ls-files .agenticguild | grep -vE '(^|/)(\.gitkeep|config\.json|source_package\.json)$'`. Those three file names are tracked by default installs and prove nothing; if the command lists any other file (for example a session file or `MUST_NEVER.md`), the project has chosen to commit `.agenticguild/`.
 
           If NOT in stealth mode:
           - If the project already tracks its memory files, or `track_memory` is `true`: never add an `.agenticguild/*` ignore-all rule. If `.gitignore` has no rule for `.agenticguild/current_state.md`, append this block:
