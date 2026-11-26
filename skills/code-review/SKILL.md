@@ -7,9 +7,9 @@
   <state_machine_directives>
     1. STEPS: Execute one `<step>` per response. A step whose `<exits kind="AUTO">` has a matching `WHEN` row continues into that row's target in the same response (it is not a pause). Rows are tried top to bottom and the first match is taken.
     2. PAUSES: Exits of kind DECISION, QUESTION, or RESULT are pauses. At a pause you MUST completely stop generating text and wait for the owner's reply.
-    3. REPLIES: A reply is read only by the exits table of the step that paused, using the reply classes below. `STOP` beats every other class. A reply that fits no row except OTHER takes the OTHER row. Never guess a reply into a row it does not fit.
-    4. Always end a response that stops at a pause by summarizing our progress conversationally and gently inviting the owner to reply.
-    5. REPLY CLASSES: `FIX 1,3`, `FIX all`, `FIX all except 2` (class FIX: apply the chosen findings); `ACCEPT 2` (class ACCEPT: leave those findings as they are); a bare `ACCEPT` (class ACCEPT-CHECK: accept committing with a failing check); yes, `another pass`, or `again` (class PASS: run another pass); `no` (class NO: do not run another pass; closes the loop); `CONTINUE` or `PROCEED` (class CONTINUE: close the review; green check results also count); `STOP` (class STOP: end without further changes); pasted failing check output (class FINDINGS); instructions for another attempt (class GUIDANCE); anything else is OTHER. Offer these words; free-form replies still work.
+    3. REPLIES: A reply is read only by the exits table of the step that paused. It is one of the reply words only when the whole message equals the word: case, spaces, and a final full stop or exclamation mark are ignored, and any other extra words make it not a match. `ok`, `sure`, `done`, `green`, `pushed`, `resolved`, `proceed`, and every other synonym are not words. `STOP` beats every other class. Pasted findings or errors (FINDINGS) and instructions or a path for another attempt (GUIDANCE) are longer free text, and count only at a pause that lists them. A reply that fits no row except OTHER takes the OTHER row: say which words are valid and ask again. Never guess a reply into a row it does not fit.
+    4. PAUSE PROMPT: End every response that stops at a pause with a short, conversational progress summary, then name the exact words that pause accepts (each word of the classes in its exits table except OTHER, with what it does, taken from the row's note) and invite the owner to reply with one of them. Free text counts only where the table lists FINDINGS or GUIDANCE.
+    5. REPLY WORDS: `FIX 1,3`, `FIX ALL`, or `FIX ALL EXCEPT 2` (class FIX: apply the chosen findings); `ACCEPT 2` or `ACCEPT 1,3` (class ACCEPT: leave those findings as they are); a bare `ACCEPT` (class ACCEPT-CHECK: accept committing with a failing check); `AGAIN` (class PASS: run another pass); `NO` (class NO: do not run another pass; closes the loop); `CONTINUE` (class CONTINUE: close the review, or report that the checks are green); `STOP` (class STOP: end without further changes); pasted failing check output (class FINDINGS); instructions for another attempt (class GUIDANCE); anything else is OTHER.
     6. MODE: When this skill runs from `finish-branch`, the mode of `finish-branch` applies (`finish_branch_mode` in `.agenticguild/config.json`, `stepped` when absent, or the owner's word for that run). Standalone, the run is hands-off only when the owner says "hands-off" for it (for example "code review hands-off"); the config setting does not apply. In both modes every report stops for the owner's choice. In hands-off mode only, a fix round that passes its checks is committed and the next pass over the whole branch runs in the same response (step 2.1), and the run stops at the new report.
     7. DISPOSITIONS: Findings left unfixed and failing checks the owner accepted are recorded under `## Review disposition` in the active session file (targeted edits only; use `cat` to read it, since it may be ignored by git). When there is no active session, record them under the same heading at the end of `.agenticguild/review_ledger.md` (create the file if missing, never overwrite it).
     8. END: Standalone, tell the owner the review loop is closed (END) or stopped (END-STOPPED) and stop. When invoked from `finish-branch`, return CLOSED (END) or STOPPED (END-STOPPED) to it at once, without pausing; finish-branch decides the next stop.
@@ -54,7 +54,7 @@
           Skip any finding that is recorded under `## Review disposition` as accepted or declined, unless the code it refers to has changed since.
           Format your output using strict categories (MUST FIX, STRONGLY RECOMMENDED, NICE TO IMPROVE). Number every finding with one running sequence across all three categories (1, 2, 3, ...), so a reply such as `FIX 1,3` is unambiguous. Every identified issue, regardless of category, must be listed. Write "None" under a category with no findings.
           If this pass finds nothing, lead the reply with an explicit clean verdict ("Code review is clean — no remaining findings.") and invite `CONTINUE`. Do not ask whether the owner wants another pass.
-          Present the numbered list conversationally and invite a reply such as `FIX 1,3`, `FIX all`, `FIX all except 2`, or `ACCEPT 2`. Say that `CONTINUE` closes the review, and that findings still unfixed stay as they are.
+          Present the numbered list conversationally and invite a reply such as `FIX 1,3`, `FIX ALL`, `FIX ALL EXCEPT 2`, or `ACCEPT 2`. Say that `CONTINUE` closes the review, and that findings still unfixed stay as they are.
         </action>
         <exits kind="DECISION">
           ON FIX -> 2.1 : apply the chosen findings
@@ -95,7 +95,7 @@
         </exits>
       </step>
       <step id="2.4" name="Another pass?">
-        <action>Tell the owner which findings were fixed, that the ledger is updated, and the result of the checks. Then ask whether to run another pass over the whole branch.</action>
+        <action>Tell the owner which findings were fixed, that the ledger is updated, and the result of the checks. Then ask whether to run another pass over the whole branch: `AGAIN` runs it, `NO` or `CONTINUE` closes the loop.</action>
         <exits kind="QUESTION">
           ON PASS -> 1.1
           ON NO -> 2.2 : close the review
@@ -129,11 +129,11 @@
       </step>
       <step id="2.2" name="Close the loop" close-step="true">
         <action>
-          If the owner replied `CONTINUE` or no: record every finding left unfixed under `## Review disposition` as accepted (targeted edit), so later passes do not raise it again unless its code changes; then confirm the review loop is closed and name those findings.
+          If the owner replied `CONTINUE` or `NO`: record every finding left unfixed under `## Review disposition` as accepted (targeted edit), so later passes do not raise it again unless its code changes; then confirm the review loop is closed and name those findings.
           If the owner replied `STOP`: confirm the loop is stopped and name any findings still open.
         </action>
         <exits kind="AUTO">
-          WHEN the owner closed the review (CONTINUE or no) -> END
+          WHEN the owner closed the review (CONTINUE or NO) -> END
           WHEN otherwise (the owner stopped) -> END-STOPPED
         </exits>
       </step>

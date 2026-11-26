@@ -48,7 +48,11 @@ section here.
 - **`scripts/check.sh`** validates the transition tables of every skill (`scripts/check-flow.sh`:
   every pause has STOP and OTHER rows, every target exists, every step is reachable, the steps that
   open the Draft PR can only be entered after the reviews and the full check, nested skills hand control back
-  the way their caller expects) and fails if the git rules differ between skills.
+  the way their caller expects) and fails if the git rules differ between skills. A second check
+  (`scripts/check-replies.js`) keeps the reply words exact: a pause accepts only whole-message words
+  (`CONTINUE`, `YES`, `NO`, `STOP`, `OPEN`, `RETRY`, `MANUAL`, `SKIP`, `AGAIN`, `FIX ...`, `ACCEPT ...`, `APPLY ...`),
+  never synonyms like "ok", "done", or "pushed". It asserts the same invariants at every pause and compares
+  where each word leads with a golden matrix (`scripts/flow-matrix.txt`).
 - **`harvest-rules`** keeps only rules that pass four tests and moves the ledger only after it
   finishes. **`sync-docs`** shows an impact table. **`pr-description`** fills your PR template.
 - **`sync.sh` and `update-agentic-guild`** never overwrite an existing file, write config only

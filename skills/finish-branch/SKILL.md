@@ -7,8 +7,8 @@
   <state_machine_directives>
     1. STEPS: Execute one `<step>` per response. A step whose `<exits kind="AUTO">` has a matching `WHEN` row continues into that row's target in the same response (it is not a pause). Rows are tried top to bottom and the first match is taken.
     2. PAUSES: Exits of kind QUESTION, DECISION, or RESULT are pauses, and so are NESTED steps while the nested skill waits for the owner. At a pause you MUST completely stop generating text and wait for the owner's reply.
-    3. REPLIES: A reply is read only by the exits table of the step that paused, using `<reply_classes>`. `STOP` beats every other class. A reply that fits no row except OTHER takes the OTHER row. Never guess a reply into a row it does not fit.
-    4. End every response that stops at a pause with a short, conversational progress summary and an invitation to reply.
+    3. REPLIES: A reply is read only by the exits table of the step that paused. It is one of the reply words only when the whole message equals the word: case, spaces, and a final full stop or exclamation mark are ignored, and any other extra words make it not a match. `ok`, `sure`, `done`, `green`, `pushed`, `resolved`, `proceed`, and every other synonym are not words. `STOP` beats every other class. Pasted findings or errors (FINDINGS) and instructions or a path for another attempt (GUIDANCE) are longer free text, and count only at a pause that lists them. A reply that fits no row except OTHER takes the OTHER row: say which words are valid and ask again. Never guess a reply into a row it does not fit.
+    4. PAUSE PROMPT: End every response that stops at a pause with a short, conversational progress summary, then name the exact words that pause accepts (each word of the classes in its exits table except OTHER, with what it does, taken from the row's note) and invite the owner to reply with one of them. Free text counts only where the table lists FINDINGS or GUIDANCE.
     5. MODE: Read `finish_branch_mode` in `.agenticguild/config.json` with `cat` (`stepped` when absent). The owner can also say "finish branch hands-off" for this run. A hands-off run of this skill means one of those two; `start_task_mode` does not apply here. Hands-off changes: the nested review loops (`code-review`, `audit-compliance`) chain their fix rounds and next passes automatically (stepped mode stops after each fix round), step 3.3 continues on its own, the Draft opens without asking (2.4), and commit and push are allowed in any `agent_git` mode (GIT MODES; PU.1 then rebases first). Every pause in this skill stops in both modes.
     6. REMOTE REVIEW: Some remote reviewers (for example Bugbot) review a PR only once. Never trigger the remote reviewer yourself, and never post its re-run comment unless the owner explicitly asks. Never suggest a re-run after docs-only changes. Tell the owner when a manual re-run is worthwhile: when code changed after the review.
     7. PUSH TIMING: Pushes go through procedure PU only. The Draft counts as open once step 2.9 has been reached in this run. Before that, the only push is step 2.3 (it carries everything the nested reviews and the full check committed); where the owner pushes (OWNER), steps 2.7 and 2.10 ask for it. From step 3.1 on, push after each fix round (FIX-FINDINGS, or a FULL-CHECK fix in step 3.2) and once at the very end in step 4.8, with no pushes in between. Under OWNER, PU asks the owner to push and waits.
@@ -30,18 +30,18 @@
   </persona>
 
   <reply_classes>
-    How each class is recognized. Each pause lists the classes it accepts; the owner may word them freely.
-    CONTINUE: `CONTINUE`, `PROCEED`, yes, green, done, pushed, resolved. Used by pauses that report an outcome or ask to move on.
-    YES: yes, ok, sure, `CONTINUE`, `PROCEED`: an answer to a yes/no question. "Done", "green", "pushed", and "resolved" are not YES. A pause lists YES or CONTINUE, never both.
-    OPEN: "open", "it is open", or a link to the PR (the Draft exists). Never CONTINUE.
-    NO: no, or declining the offer.
+    The reply words of this skill (see directive 3: a word matches only when the whole message equals it). Each pause lists the classes it accepts.
+    CONTINUE: `CONTINUE`. Move on, or report that the step's work is done (for example green, pushed, or resolved).
+    YES: `YES`: the yes of a yes/no question.
+    NO: `NO`: the no of a yes/no question, or declining the offer.
     STOP: `STOP`.
-    FINDINGS: pasted review findings or CI errors. Number them 1, 2, 3 in the order pasted, in your reply; an `ACCEPT n` sent with the paste refers to that order.
-    GUIDANCE: instructions or a hint for another attempt.
+    OPEN: `OPEN`, or a message that is only the link to the PR: the Draft exists.
+    RETRY: `RETRY`.
+    MANUAL: `MANUAL`: the owner does it, or asks for the text to do it.
     ACCEPT: `ACCEPT 2` or `ACCEPT 1,3`: leave those findings unfixed (numbers from the last numbered list shown).
     ACCEPT-CHECK: a bare `ACCEPT`: accept committing with a failing check.
-    RETRY: `retry`.
-    MANUAL: the owner will do it, or asks for the text to do it.
+    FINDINGS: free text that pastes review findings or CI errors. Number them 1, 2, 3 in the order pasted, in your reply; an `ACCEPT n` sent with the paste refers to that order.
+    GUIDANCE: free text with instructions or a hint for another attempt.
     CLOSED, STOPPED: how a nested skill ended (`CONTINUE` closes it, `STOP` stops it).
     OTHER: anything else.
   </reply_classes>
@@ -56,7 +56,7 @@
     | Run the full test and check commands | you | you | the owner |
     | Commit | you | you | you in `commit` mode, a suggested message in `suggest` mode |
     | Push | you | you | the owner |
-    | Open the Draft PR | you (PR tool) | you after the owner says yes (PR tool) | the owner |
+    | Open the Draft PR | you (PR tool) | you after the owner replies `YES` (PR tool) | the owner |
     | Edit the PR body, post a comment | you (PR tool) | you (PR tool) | the owner |
 
     In Stealth Mode never post the QA record on the PR; give the owner the text.
@@ -79,7 +79,7 @@
         </exits>
       </step>
       <step id="0.2" name="Initialize missing files">
-        <action>Tell the owner the missing files are needed to start and offer to initialize the project templates. Do NOT hallucinate contents without owner confirmation. On yes, run sync.sh (or equivalent) if available, otherwise create minimal placeholders from EXPECTED_PROJECT_STRUCTURE.</action>
+        <action>Tell the owner the missing files are needed to start and offer to initialize the project templates. Do NOT hallucinate contents without owner confirmation. On `YES`, run sync.sh (or equivalent) if available, otherwise create minimal placeholders from EXPECTED_PROJECT_STRUCTURE.</action>
         <exits kind="QUESTION">
           ON YES -> 0.3 : initialize the files first
           ON NO -> END : finish-branch cannot start without them
@@ -184,17 +184,17 @@
         </exits>
       </step>
       <step id="2.7" name="Owner opens the Draft" only-from="2.4 2.7 2.8">
-        <action>Use `.cursor/skills/pr-description/SKILL.md` to give the owner the filled PR template as text, and give the push command. Ask the owner to push the branch and open the Draft with that text, and to reply "open" (or paste the PR link) once the Draft exists. "Pushed" alone is not enough here.</action>
+        <action>Use `.cursor/skills/pr-description/SKILL.md` to give the owner the filled PR template as text, and give the push command. Ask the owner to push the branch and open the Draft with that text, and to reply `OPEN` (or paste the PR link) once the Draft exists. `CONTINUE` is not enough here.</action>
         <exits kind="RESULT">
           ON OPEN -> 2.9 : the Draft is open
           ON FINDINGS -> FX.1 return 2.7 : fix them; the owner pushes and opens the Draft afterwards
           ON NO -> END : the owner will not open a PR now; nothing is marked delivered
           ON STOP -> END-STOPPED
-          ON OTHER -> SAME : say which replies are valid and ask again; if the owner says a PR already exists for this branch, ask for its link or "open" to confirm, then treat it as open
+          ON OTHER -> SAME : say which replies are valid and ask again; if the owner says a PR already exists for this branch, ask for its link or `OPEN` to confirm, then treat it as open
         </exits>
       </step>
       <step id="2.8" name="Opening failed" only-from="2.5">
-        <action>Show the error from the PR tool. Valid replies: retry, open (or its link), or manual (you give the owner the text and the push command).</action>
+        <action>Show the error from the PR tool. Valid replies: `RETRY`, `OPEN` (or the link to the PR), or `MANUAL` (you give the owner the text and the push command).</action>
         <exits kind="RESULT">
           ON RETRY -> 2.5
           ON MANUAL -> 2.7
