@@ -32,7 +32,7 @@
     <phase id="0" name="Pre-Update Checks">
       <step id="0.1">
         <action>
-          Use the `view_file` tool to quietly read `.agenticguild/config.json`. If it exists and contains `"stealth_mode": true`, remember that you are operating in stealth mode. Do not announce this to the user.
+          Use `cat` to quietly read `.agenticguild/config.json`. If it exists and contains `"stealth_mode": true`, remember that you are operating in stealth mode. Do not announce this to the user.
         </action>
         <yield>[AUTO-TRANSITION TO 0.2]</yield>
       </step>
@@ -127,7 +127,7 @@
     <phase id="2" name="Sync Files">
       <step id="2.1">
         <action>
-          Read the **Sync Registry** from `.agenticguild/tmp_update/playbooks/SYNC_REGISTRY.md` using the `view_file` tool. This file is the single source of truth for all file mappings and strategies. Parse the `SYNC_REGISTRY [START]` / `SYNC_REGISTRY [END]` table to get the full list of `Upstream Source`, `Local Destination`, and `Strategy` values.
+          Read the **Sync Registry** from `.agenticguild/tmp_update/playbooks/SYNC_REGISTRY.md` using `cat`. This file is the single source of truth for all file mappings and strategies. Parse the `SYNC_REGISTRY [START]` / `SYNC_REGISTRY [END]` table to get the full list of `Upstream Source`, `Local Destination`, and `Strategy` values.
 
           IMPORTANT: Skip any rows for `templates/core/AGENTIC_GUILD_RULES.md` and `templates/git-hooks/pre-commit-logic.sh` — these were already handled with specialized logic in Phase 1.
 
@@ -182,7 +182,7 @@
     <phase id="4" name="Review & Cleanup">
       <step id="4.1">
         <action>
-          If `.agenticguild/tmp_update/CHANGELOG.md` exists, use the `view_file` tool to quietly read it to discover what is new in the latest version. If it does not exist, skip the changelog read and leave out the "What's New" section without raising an error.
+          If `.agenticguild/tmp_update/CHANGELOG.md` exists, use `cat` to quietly read it to discover what is new in the latest version. If it does not exist, skip the changelog read and leave out the "What's New" section without raising an error.
           In every case, clean up the temporary workspace: Run `rm -rf .agenticguild/tmp_update` (this scratch directory, created by this skill, is the only path this skill may delete).
           Report a clear, conversational summary of everything that happened to the local project: files added, files merged, conflicts resolved, and housekeeping actions taken.
           If you read a changelog, finish with a "🎉 What's New in agentic:guild" section where you summarize the most exciting new features, improvements, or fixes from it.

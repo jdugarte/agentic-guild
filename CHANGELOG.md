@@ -99,7 +99,7 @@ First tracked release. It covers everything built since the project started on 2
 - **`no-computer-use` rule template** that stops agents from launching browser or desktop
   subagents or switching models, with headless-test guidance for Rails, Flutter, web, and
   React Native.
-- **Git pre-commit hook** that guards agentic:guild state files.
+- **Git pre-commit hook scaffold** installed by `sync.sh` (a marked block reserved for future guild checks).
 - **CI check** (ShellCheck on the shell scripts).
 
 ### Changed

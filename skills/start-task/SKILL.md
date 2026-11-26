@@ -46,7 +46,7 @@
       </step>
       <step id="0.2">
         <action>
-          Explore-first check. Use `cat` to read `.agenticguild/current_state.md` and find the active session; check that the file exists with `test -e`. If the session exists and contains a populated `<implementation_plan>`, the task was explored: [AUTO-TRANSITION TO 1.1].
+          Explore-first check. Use `cat` to read `.agenticguild/current_state.md` and find the active session; check that the file exists with `test -e`. If the session exists and contains a populated `<implementation_plan>`, the task was explored. The session already holds the task classification and the roadmap item, so skip Phase 1: [AUTO-TRANSITION TO 2.1].
           Otherwise there is no explored plan. If you already warned the owner in this conversation, follow their earlier answer. If not, warn once: "There's no explored plan for this task. agentic:guild works best when we explore first, which takes a few minutes and avoids guessing. Would you like to explore first, or continue without the guild's process (no plan, no step-by-step approvals, and none of the skills' safety rules)? The architecture rules still apply and finish-branch is still available."
         </action>
         <yield>
@@ -86,10 +86,10 @@
     <phase id="2" name="Confirm the Locked Plan">
       <step id="2.1">
         <action>
-          Use `cat` to read `.agenticguild/current_state.md` and find the active session file; verify it exists with `test -e` and read it with `cat`. If it contains a populated `<implementation_plan>` block, acknowledge that the spec is locked and [AUTO-TRANSITION TO 3.0].
+          Use `cat` to read `.agenticguild/current_state.md` and find the active session file; verify it exists with `test -e` and read it with `cat`. If it contains a populated `<implementation_plan>` block, acknowledge that the spec is locked. Read the stamped classification and the `<roadmap_item>` from the session; if the classification is missing, [AUTO-TRANSITION TO 1.3] to ask for it, otherwise [AUTO-TRANSITION TO 3.0].
           If the plan is empty or missing, do not draft one here. Tell the owner the task needs an explored plan, point them to `explore-task`, and wait.
         </action>
-        <yield>[PAUSE - NO EXPLORED PLAN, OR AUTO-TRANSITION TO 3.0]</yield>
+        <yield>[PAUSE - NO EXPLORED PLAN, OR AUTO-TRANSITION TO 3.0 (or 1.3 when the classification is missing)]</yield>
       </step>
       <step id="2.2">
         <action>
