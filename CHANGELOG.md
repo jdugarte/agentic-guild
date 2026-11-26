@@ -33,9 +33,11 @@ section here.
 - **`start-task`** keeps a step lock, commits with `Step N:` subjects, warns once when there is
   no explored plan, and ends with the full test suite, one QA question, and an invitation to
   start `finish-branch` (never started automatically).
-- **`finish-branch`** now opens the Draft PR only after the code review and the compliance audit
-  are clean or accepted, loops on the CI check and remote review, then harvests rules, syncs docs,
-  updates the PR text, and archives the task. It delegates the audit to `audit-compliance`.
+- **`finish-branch`** now runs a full local check pass and opens the Draft PR only after the code
+  review and the compliance audit are clean or accepted, loops on the remote review (re-running
+  the full check only if code changed), then harvests rules, syncs docs, updates the PR text, and
+  archives the task before reminding you to mark the PR Ready so CI runs. It delegates the audit
+  to `audit-compliance`.
 - **`code-review` and `audit-compliance`** stop at every report with the same reply words
   (`FIX`, `ACCEPT`, `APPLY`, `CONTINUE`, `STOP`), review the whole branch on every pass, and
   report only the checks they actually ran.
