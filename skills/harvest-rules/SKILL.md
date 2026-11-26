@@ -8,6 +8,7 @@
     1. NEVER execute more than ONE <step> per response.
     2. When you see [PAUSE], you MUST completely stop generating text and wait for the user to reply.
     3. Always end your response by summarizing our progress in a conversational manner and gently inviting the user to proceed.
+    4. REPLY WORDS: `APPLY 1,2` or `APPLY all` (write the chosen rules), `CONTINUE` (decline every candidate; nothing is written), `STOP` (abort; nothing is written and the review ledger is left untouched). `PROCEED` is accepted as a fallback for `CONTINUE`. Free-form replies still work; offer these words.
   </state_machine_directives>
 
   <hard_constraints>
@@ -31,9 +32,9 @@
     <phase id="1" name="Pattern Analysis">
       <step id="1.0">
         <action>
-          Check if `.agenticguild/review_ledger.md` exists. If it exists, read its contents. Synthesize the recorded CI/Review diagnoses into actionable "Gotchas" or "Anti-Patterns" you should avoid in the future.
-          If an active task session exists: Use the `view_file` tool to read `.agenticguild/current_state.md` and parse `<active_task_pointer>`. If it points to a session filename (e.g. `task_foo.md`) and that file exists at `.agenticguild/active_sessions/` + that filename, read the entire session file. Analyze it for rule-worthy content: conventions, patterns, anti-patterns, "we must/must not" decisions, naming or style choices. Treat these as additional candidates to merge with review_ledger and the diff in step 1.1.
-          Combine review_ledger findings (and any session-derived candidates) with your standard git diff analysis in the next step to propose a unified list of "New Rule Candidates".
+          Read, before forming any candidate: (1) `.agenticguild/review_ledger.md` if it exists (check with `test -e` and read with `cat`; the file is usually ignored by git and invisible to search tools), (2) the active task session notes, and (3) the branch diff (read in step 1.1).
+          Treat the ledger as evidence of what went wrong on this branch, not as a list to promote. A ledger entry, a session note, or a diff pattern becomes a candidate only if it passes the four tests in step 1.1.
+          If an active task session exists: Use `cat` to read `.agenticguild/current_state.md` and parse `<active_task_pointer>`. If it points to a session filename (e.g. `task_foo.md`) and that file exists at `.agenticguild/active_sessions/` + that filename, read the entire session file. Analyze it for rule-worthy content: conventions, patterns, anti-patterns, "we must/must not" decisions, naming or style choices. Treat these as additional raw candidates, subject to the same four tests.
         </action>
         <yield>[AUTO-TRANSITION TO 1.1]</yield>
       </step>
@@ -41,24 +42,33 @@
         <action>
           Read the `git diff` of the current branch against the default branch (e.g. `main`). Use the repository's default branch unless the project uses a different convention.
           Analyze the changes for new error handling, naming conventions, UI patterns, or data structures.
-          If you read a session file in step 1.0, include the session-derived rule candidates in your analysis. Merge with diff-based and review_ledger-based candidates into one unified list.
-          Scan the `docs/` directory and `.cursorrules` to determine where these new patterns should be codified.
-          Before outputting candidates: Verify proposed rules do not contradict or duplicate rules already in `docs/core/SYSTEM_ARCHITECTURE.md` or `.cursorrules`. Filter out any that do. If run after sync-docs in the same workflow (e.g. finish-branch), skip candidates that are semantically equivalent to rules likely just added to `.cursorrules` by sync-docs to avoid near-duplicates.
+          Merge diff-based, ledger-based, and session-based raw candidates into one list, then keep a candidate only if it passes ALL four tests:
+          (a) Other features or modules would hit the same kind of mistake.
+          (b) It is a judgment mistake, not a local bug.
+          (c) It can be worded without this branch's class, method, or type names.
+          (d) No existing rule in `.cursorrules` or in `docs/core/SYSTEM_ARCHITECTURE.md` already covers it. Scan the `docs/` directory and `.cursorrules` to check, and to choose the target file.
+          Drop everything else: one-off fixes, single-spot bugs, and notes about one PR. Those stay in the ledger or belong in the changelog or spec if they matter. When unsure whether a candidate passes, drop it: propose fewer rules.
           If the changes imply future work (e.g. a new pattern that will need follow-up features), consider suggesting adding a roadmap item to `docs/ROADMAP.md` via the roadmap-manage skill.
-          Output a list of "New Rule Candidates" formatted as: `[Target File] -> [Proposed Rule Addition]`. Optionally note which candidates came from diff, review_ledger, or session when it helps the user.
+          Output only the surviving candidates, numbered, each formatted as `[Target File] -> [Proposed Rule Addition]`. Do not show rejected items or the filtering reasoning. If nothing passes, say so plainly and propose no rules; an empty list is a valid result.
         </action>
-        <yield>[PAUSE - WRITE LOCK ACTIVE. AWAIT USER APPROVAL OF CANDIDATES]</yield>
+        <yield>
+          [PAUSE - WRITE LOCK ACTIVE. AWAIT APPLY, CONTINUE, OR STOP]
+          Present the numbered survivors and invite `APPLY 1,2` (any numbers) or `APPLY all`. Tell the owner: "Once you reply, I'll apply your choice and then move the review ledger aside and start a fresh one." `CONTINUE` declines every candidate. `STOP` aborts. If no candidates survived, only `CONTINUE` and `STOP` apply.
+        </yield>
       </step>
     </phase>
 
     <phase id="2" name="Knowledge Commit">
       <step id="2.1">
         <action>
-          Parse the user's approval. Accept phrasings such as "APPROVE", "Yes", "Write rules", or a list of which candidates to apply.
-          Write the approved rules directly into the corresponding target files (e.g., `.cursorrules`, `docs/core/SYSTEM_ARCHITECTURE.md`) physically using the `replace_file_content` or `write_to_file` tools.
-          Once the knowledge transfer is complete, clear `.agenticguild/review_ledger.md` using file tools so the short-term memory is fresh for the next branch. This must be done unconditionally; any ledger entries that did not result in an approved rule are considered implicitly rejected by the user and should be garbage collected.
+          Parse the owner's reply.
+          - `APPLY 1,2` or `APPLY all`: write exactly the selected rules into their target files (e.g., `.cursorrules`, `docs/core/SYSTEM_ARCHITECTURE.md`) with targeted edits (append or insert; never rewrite a whole file). If a number does not match a candidate, ask before writing anything. Then re-read each target file to confirm the rule is present.
+          - `CONTINUE` (or `PROCEED`): write nothing.
+          - `STOP`, an error, or an unclear reply: write nothing, leave `.agenticguild/review_ledger.md` untouched, and end the skill (or ask for clarification).
+          Harvest is finished only when the approved rules were written and confirmed, or the owner chose `CONTINUE`. Only then handle the ledger: if `.agenticguild/review_ledger.md` exists, move it to `.agenticguild/completed_sessions/review_ledger_YYYY-MM-DD.md` (add a numeric suffix if that name exists) and start a fresh empty ledger with a `# Review Ledger` header. Never delete the old ledger. Ledger entries that did not result in a rule stay in the moved file.
+          Tell the owner that harvest is finished and where the old ledger went.
         </action>
-        <yield>[PAUSE - RULES HARVESTED. SKILL COMPLETE]</yield>
+        <yield>[PAUSE - RULES HARVESTED. SKILL COMPLETE; when invoked from finish-branch, hand control back to finish-branch]</yield>
       </step>
     </phase>
   </workflow>
