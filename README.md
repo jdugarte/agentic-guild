@@ -99,7 +99,7 @@ Once agentic:guild is installed, your AI assistant gains a suite of structured, 
 | `explore-task` | Deep discovery for new features or ambiguous work. Explores options, surfaces trade-offs, and documents findings before any commitment. |
 | `finish-branch` | Runs code review, compliance audit, the Draft PR, the remote review loop, rule harvest, docs, and archive — in sequence, with a stop after every report. |
 | `qa` | Opt-in QA pass: builds a test matrix from the plan, runs it using your project's QA profile, and stages a paste-ready reviewer record. |
-| `code-review` | Project-aware static analysis that produces numbered, actionable fixes — not generic advice. |
+| `code-review` | Reviews the whole branch like an independent automated PR reviewer (every path, exit, and caller of what changed) and produces numbered, actionable fixes — not generic advice. |
 | `audit-compliance` | An independent verification pass. Checks code determinism, REQ-ID traceability, and HRE compliance mathematically. |
 | `status-check` | The GPS. Reads persistent memory to diagnose exactly where a task is blocked and fully rehydrates context. |
 | `harvest-rules` | Scans Git diffs to extract new architectural patterns and maps them to living documentation. The AI learns from its own work — rules improve as the project grows. |

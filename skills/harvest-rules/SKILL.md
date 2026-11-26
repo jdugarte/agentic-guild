@@ -12,7 +12,7 @@
   </state_machine_directives>
 
   <hard_constraints>
-    GIT MODES: Read `agent_git` in `.agenticguild/config.json` with `cat` (`suggest` when absent). `suggest`: never run `git commit` or `git push`; when a commit is appropriate, output a suggested message as a plain-text code block and the owner runs git. `commit`: you may run `git commit` on the current feature branch, never `git push`. `cloud`: you may run `git commit` and `git push` on the current feature branch. A hands-off run (`start_task_mode` or `finish_branch_mode` set to hands-off, or the owner said hands-off for this run) allows commit and push for that run in any mode.
+    GIT MODES: Read `agent_git` in `.agenticguild/config.json` with `cat` (`suggest` when absent). `suggest`: never run `git commit` or `git push`; when a commit is appropriate, output a suggested message as a plain-text code block and the owner runs git. `commit`: you may run `git commit` on the current feature branch, never `git push`. `cloud`: you may run `git commit` and `git push` on the current feature branch. A hands-off run (as defined in this skill's mode directive; when this skill runs from `finish-branch`, the `finish-branch` definition applies) allows commit and push for that run in any mode.
     ALWAYS FORBIDDEN in every mode: `git merge`, `git push --force` (and `--force-with-lease`), amending commits that were already pushed, pushing to the default branch, `gh pr merge`, `gh pr close`, `gh pr ready`, `gh release create`, and creating a PR. The only PR you may create is the Draft PR at the finish-branch PR step, and only when the owner chose that step.
     SAFE FILE OPERATIONS: Never overwrite or delete an existing file without the user's explicit confirmation. Before any file write, move, or delete, read `docs/ai/SAFE_FILE_OPERATIONS.md` and follow it.
   </hard_constraints>
@@ -64,11 +64,12 @@
           Parse the owner's reply.
           - `APPLY 1,2` or `APPLY all`: write exactly the selected rules into their target files (e.g., `.cursorrules`, `docs/core/SYSTEM_ARCHITECTURE.md`) with targeted edits (append or insert; never rewrite a whole file). If a number does not match a candidate, ask before writing anything. Then re-read each target file to confirm the rule is present.
           - `CONTINUE` (or `PROCEED`): write nothing.
-          - `STOP`, an error, or an unclear reply: write nothing, leave `.agenticguild/review_ledger.md` untouched, and end the skill (or ask for clarification).
+          - `STOP` or an error: write nothing, leave `.agenticguild/review_ledger.md` untouched, and end the skill with `STOP`.
+          - An unclear reply: write nothing, do not end the skill, and ask again: [PAUSE - AWAIT APPLY, CONTINUE, OR STOP] (the next reply is parsed by this step again).
           Harvest is finished only when the approved rules were written and confirmed, or the owner chose `CONTINUE`. Only then handle the ledger: if `.agenticguild/review_ledger.md` exists, move it to `.agenticguild/completed_sessions/review_ledger_YYYY-MM-DD.md` (add a numeric suffix if that name exists) and start a fresh empty ledger with a `# Review Ledger` header. Never delete the old ledger. Ledger entries that did not result in a rule stay in the moved file.
           Tell the owner that harvest is finished and where the old ledger went.
         </action>
-        <yield>[PAUSE - RULES HARVESTED. SKILL COMPLETE; when invoked from finish-branch, hand control back to finish-branch]</yield>
+        <yield>Standalone: [PAUSE - RULES HARVESTED. SKILL COMPLETE] When invoked from `finish-branch`: [END - hand control back to finish-branch at once, without pausing, stating whether harvest closed with `CONTINUE` (rules applied or declined) or `STOP`; finish-branch decides the next stop]</yield>
       </step>
     </phase>
   </workflow>

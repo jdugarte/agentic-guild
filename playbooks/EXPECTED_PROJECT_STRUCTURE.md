@@ -27,7 +27,7 @@ This document lists every referenced path, its purpose, and how it fits into the
 | `start-task/SKILL.md` | Executes the explored plan one step at a time (or hands-off) with test-first discipline. |
 | `finish-branch/SKILL.md` | Orchestrates code review, compliance audit, the Draft PR, the remote review loop, harvest, docs, and archive. |
 | `qa/SKILL.md` | Opt-in QA pass using the project-owned `docs/ai/qa_profile.md`; sets the profile up on request. |
-| `code-review/SKILL.md` | Runs project-specific static analysis. |
+| `code-review/SKILL.md` | Reviews the whole branch like an independent PR reviewer (paths, exits, callers), plus project-specific rules. |
 | `audit-compliance/SKILL.md` | IV&V agent that mathematically checks code determinism. |
 | `status-check/SKILL.md` | Reads `.agenticguild/` to diagnose blockers and rehydrate context. |
 | `harvest-rules/SKILL.md` | Proposes new rules from git diff, review_ledger, and active task session; writes approved rules to `.cursorrules` and SYSTEM_ARCHITECTURE. |

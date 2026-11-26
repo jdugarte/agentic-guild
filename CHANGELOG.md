@@ -40,7 +40,9 @@ section here.
   to `audit-compliance`.
 - **`code-review` and `audit-compliance`** stop at every report with the same reply words
   (`FIX`, `ACCEPT`, `APPLY`, `CONTINUE`, `STOP`), review the whole branch on every pass, and
-  report only the checks they actually ran.
+  report only the checks they actually ran. `code-review` now reviews like an independent
+  automated PR reviewer: every path, every exit, and every caller of what changed, with a
+  severity, a breaking scenario, and a fix for each finding.
 - **`harvest-rules`** keeps only rules that pass four tests and moves the ledger only after it
   finishes. **`sync-docs`** shows an impact table. **`pr-description`** fills your PR template.
 - **`sync.sh` and `update-agentic-guild`** never overwrite an existing file, write config only

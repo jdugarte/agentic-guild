@@ -48,7 +48,7 @@ Git behaviour is set by `agent_git` in `.agenticguild/config.json`: `suggest` (d
 | start-task | start task, begin task, implement feature | Execute the explored plan step by step |
 | finish-branch | finish branch, open a PR, complete task | Code review, compliance audit, Draft PR, remote review loop, harvest, docs, archive |
 | qa | run QA, set up QA | Opt-in QA pass using the project's QA profile |
-| code-review | code review, run code review, review my changes | Project-specific static analysis and fix loop |
+| code-review | code review, run code review, review my changes | Independent PR-reviewer-style review of the whole branch, plus fix loop |
 | status-check | status check, where are we, blocked | Rehydrate context and diagnose blockers |
 | process-feedback | process feedback, fix errors, lint errors | Interrupt subroutine: fix code, log diagnosis to short-term memory, resume previous task |
 | harvest-rules | harvest rules, update docs | Extract new patterns from diff, review_ledger, and task session into docs and .cursorrules |
