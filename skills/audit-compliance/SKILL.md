@@ -8,6 +8,8 @@
     1. NEVER execute more than ONE <step> per response.
     2. When you see [PAUSE], you MUST completely stop generating text and wait for the user to reply.
     3. Always end your response by summarizing our progress in a conversational manner and gently inviting the user to proceed.
+    4. REPLY WORDS: `FIX 1,3` or `FIX all` (apply the chosen findings), `FIX all except 2`, `ACCEPT 2` (leave a finding as is), `CONTINUE` (close the audit; `PROCEED` is accepted), `STOP` (end without further changes). Free-form replies still work; offer these words.
+    5. MODE: Read `finish_branch_mode` in `.agenticguild/config.json` with `cat` (`stepped` when absent). The owner can also say "hands-off" for this run, and a standalone request such as "audit compliance hands-off" counts. When this skill runs from `finish-branch`, the mode of `finish-branch` applies. In both modes every report stops for the owner's choice. In hands-off mode only, after the owner's choice you apply the fixes, update the review ledger, run the checks, commit, and run the next audit in the same response, then stop at the new report.
   </state_machine_directives>
   <hard_constraints>
     GIT MODES: Read `agent_git` in `.agenticguild/config.json` with `cat` (`suggest` when absent). `suggest`: never run `git commit` or `git push`; when a commit is appropriate, output a suggested message as a plain-text code block and the owner runs git. `commit`: you may run `git commit` on the current feature branch, never `git push`. `cloud`: you may run `git commit` and `git push` on the current feature branch. A hands-off run (`start_task_mode` or `finish_branch_mode` set to hands-off, or the owner said hands-off for this run) allows commit and push for that run in any mode.
@@ -30,7 +32,7 @@
     <phase id="0" name="Stealth Check">
       <step id="0.1">
         <action>
-          Use the `view_file` tool to quietly read `.agenticguild/config.json`. If it exists and contains `"stealth_mode": true`, remember that you are operating in stealth mode. Do not announce this to the user.
+          Use `cat` to quietly read `.agenticguild/config.json`. If it contains `"stealth_mode": true`, remember that you are operating in stealth mode. If it sets `"verification": "human-review"`, remember that this project has no automated tests. Do not announce either to the user.
         </action>
         <yield>[AUTO-TRANSITION TO 1.1]</yield>
       </step>
@@ -41,29 +43,63 @@
         <action>
           Assume the persona of an Independent Auditor. You have no knowledge of the brainstorming process.
           Use the `view_file` tool to read `docs/core/deterministic_coding_standards.md` to establish the strict rules.
-          Read the `git diff` of the branch against the default branch (e.g. `main`). Use the repository's default branch unless the project uses a different convention.
-          
-          If NOT in Stealth Mode: Scan test files for `[REQ-ID]` traceability against `SPEC.md`.
-          If in Stealth Mode: Skip the `[REQ-ID]` traceability check entirely to avoid cluttering external repos with internal tags.
-          
+          Read the `git diff` of the WHOLE branch against the default branch (e.g. `main`), including uncommitted changes. Use the repository's default branch unless the project uses a different convention. Every pass covers the whole branch, whether it is the first pass, a pass the owner asked for, or an automatic hands-off pass. Do a partial audit only when the owner explicitly asks for one.
+          Skip any finding that the active session file records under `## Review disposition` as accepted or declined, unless the code it refers to has changed since. To read the session file, use `cat`.
+
+          If NOT in Stealth Mode and the project does not use `verification: human-review`: Scan test files for `[REQ-ID]` traceability against `SPEC.md`.
+          If in Stealth Mode, or the project uses `verification: human-review`: Skip the test traceability check entirely (Stealth Mode avoids cluttering external repos with internal tags; a human-review project has no tests to tag).
+
           Scan all new or modified files for domain concepts represented as raw primitive types (String, Integer, raw object/hash). A "domain concept" is any value with business meaning: identifiers, contact data, measurements, or status enums. Flag any that should be a Value Object (Ruby) or Branded Type (TypeScript).
-          
-          Generate a strict Compliance Report using the exact format specified below:
-          
+
+          Generate a strict Compliance Report using the exact format specified below. Number every [FAIL] and [WARN] line with one running sequence across the three sections, so a reply such as `FIX 1,3` is unambiguous; [PASS] lines are not numbered.
+
           > ### 🕵️‍♂️ Compliance Audit Report
-          > 
+          >
           > **Deterministic Standards:**
           > - [PASS/FAIL] `filename:L#` - [Reason based on standards doc]
-          > 
+          >
           > **Traceability:**
           > - [PASS/WARN] `[REQ-ID]` - [Coverage status]
           >
           > **Domain Primitives (CbC):**
           > - [PASS/FAIL] `filename:L#` - `variable_or_param_name` is a raw [String/Integer/Object] — should be a Value Object (Ruby) or Branded Type (TypeScript) (e.g., `EmailAddress`, `UserId`, `MoneyAmount`).
 
-          If any [FAIL] or [WARN] exists across any section, you MUST propose a refactoring solution.
+          If any [FAIL] or [WARN] exists across any section, you MUST propose a refactoring solution for each one.
+          If this pass finds no [FAIL] and no [WARN], lead the reply with an explicit clean verdict ("Compliance audit is clean — no remaining violations.") and invite `CONTINUE`. Do not ask whether the owner wants another pass.
         </action>
-        <yield>[PAUSE - AWAIT USER COMMAND TO REFACTOR VIOLATIONS OR EXIT]</yield>
+        <yield>
+          [PAUSE - AWAIT FIX, ACCEPT, CONTINUE, OR STOP]
+          Conversationally present the report and invite a reply such as `FIX 1,3`, `FIX all`, `FIX all except 2`, or `ACCEPT 2`. `CONTINUE` closes the audit; if findings remain unfixed, say that `CONTINUE` closes the audit with those findings left as they are. `STOP` ends it at any point.
+        </yield>
+      </step>
+    </phase>
+
+    <phase id="2" name="Refactor & Verification Loop">
+      <step id="2.1">
+        <action>
+          Parse the owner's reply.
+          - `ACCEPT N`: record each accepted or declined finding in the active session file under `## Review disposition` (the finding, the decision, and enough context to recognize it later). Edit the session file with targeted edits only; if the section does not exist, append it. Do not rewrite the file.
+          - `FIX ...`: implement exactly the selected findings and touch nothing else. If a number does not match a finding, ask before changing anything. For EACH fixed finding, silently append an entry to `.agenticguild/review_ledger.md` (check that it exists with `test -e`; if it is missing, create it; never overwrite it): **Source** (for example "Compliance audit pass 2"), **Issue**, **Diagnosis/Why it failed**, **Outcome** (fixed), **Fix**. The owner does not need to ask for this.
+          Run the checks for the affected code. If `docs/ai/code_review_prompt.md` exists, run the commands it specifies (Quality or Pre-Flight section). Claim "verified" or "passed" only for commands you actually ran, and name any check you did not run. When the owner runs the checks (`suggest` or `commit` mode outside hands-off), ask for the results and report them as not yet verified until the owner confirms.
+          - Stepped mode: stop after the fixes and checks.
+          - Hands-off mode: commit the round (allowed in hands-off), then immediately run the next audit over the whole branch (Phase 1, Step 1.1) in the same response and stop at its report. For the checks between rounds, use the project's documented targeted command for the changed files; if none is documented, run the full set.
+          - `CONTINUE` or `STOP`: go to step 2.2 without changing code.
+        </action>
+        <yield>
+          [PAUSE - AWAIT VERIFICATION OR NEXT COMMAND]
+          Stepped: tell the owner which findings were fixed, that the ledger is updated, and the result of the checks. In `suggest` mode output a suggested commit message as a plain-text code block; in `commit` or `cloud` mode commit the round. Then ask whether to run another audit over the whole branch.
+          Hands-off: the next audit already ran; present its report (Phase 1, Step 1.1 yield).
+        </yield>
+      </step>
+      <step id="2.2">
+        <action>
+          If the owner replied `CONTINUE`: confirm the audit loop is closed and name any findings left unfixed.
+          If the owner replied `STOP`: confirm the loop is stopped and name any findings still open.
+          If the owner asked for another audit, loop back to Phase 1, Step 1.1.
+        </action>
+        <yield>
+          [PAUSE - AUDIT LOOP CLOSED. SKILL COMPLETE; when invoked from finish-branch, hand control back to finish-branch]
+        </yield>
       </step>
     </phase>
   </workflow>
